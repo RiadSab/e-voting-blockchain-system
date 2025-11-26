@@ -1,0 +1,19 @@
+# Dependency directories
+node_modules/
+target/
+dist/
+
+# Security
+.env
+.DS_Store
+
+# Hardhat specific
+evote-contract/artifacts/
+evote-contract/cache/
+evote-contract/coverage/
+evote-contract/typechain/
+evote-contract/deployment-info.json
+
+# IDE settings
+.idea/
+.vscode/
