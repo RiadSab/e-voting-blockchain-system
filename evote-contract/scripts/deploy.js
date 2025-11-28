@@ -26,7 +26,7 @@ async function main() {
     network: networkName,
     timestamp: new Date().toISOString()
   };
-  const artifactPath = path.join(__dirname, "../deployment-info.json");
+  const artifactPath = path.join(__dirname, "../../deployment-info.json");
   fs.writeFileSync(artifactPath, JSON.stringify(deploymentInfo, null, 2));
 }
 
