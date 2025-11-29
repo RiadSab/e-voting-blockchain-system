@@ -165,7 +165,6 @@ public class CommitmentRegistry extends Contract {
         return deployRemoteCall(CommitmentRegistry.class, web3j, transactionManager, gasPrice, gasLimit, getDeploymentBinary(), "");
     }
 
-    // useless since we do not use libraries
 //    public static void linkLibraries(List<Contract.LinkReference> references) {
 //        librariesLinkedBinary = linkBinaryWithReferences(BINARY, references);
 //    }
