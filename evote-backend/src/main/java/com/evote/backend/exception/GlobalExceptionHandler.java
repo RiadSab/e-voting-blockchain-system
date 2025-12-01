@@ -52,4 +52,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problemDetail.setType(URI.create("https://api.evote.com/errors/internal-server-error"));
         return problemDetail;
     }
+
+    @ExceptionHandler(VoteAlreadyExistsException.class)
+    ProblemDetail handleVoteAlreadyExistsException(VoteAlreadyExistsException e) {
+        log.warn("Duplicate vote attempt: {}", e.getMessage());
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                "You have already cast a vote in this election.");
+        problemDetail.setProperty(TIMESTAMP_KEY, Instant.now());
+        problemDetail.setProperty("zbi", "12345");
+        problemDetail.setTitle("Duplicate Vote");
+        problemDetail.setType(URI.create("https://api.evote.com/errors/duplicate-vote"));
+        return problemDetail;
+    }
 }

@@ -4,6 +4,7 @@ import com.evote.backend.contract.CommitmentRegistry;
 import com.evote.backend.dto.VoteRequest;
 import com.evote.backend.exception.BlockchainException;
 import com.evote.backend.exception.InvalidVoteException;
+import com.evote.backend.exception.VoteAlreadyExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,6 +24,7 @@ import org.web3j.abi.datatypes.generated.Bytes32;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class VoteService {
@@ -30,14 +32,14 @@ public class VoteService {
 
     private final String contractAddress;
 
-    private final Credentials credentials;
-
+    private final List<Credentials> credentials;
+    private final AtomicInteger voterIndex = new AtomicInteger(8);
     private static final BigInteger GAS_LIMIT = BigInteger.valueOf(500_000);
     private static final BigInteger GAS_PRICE = BigInteger.valueOf(20_000_000_000L); // 20 Gwei
 
     Logger log = LoggerFactory.getLogger(VoteService.class);
 
-    public VoteService(Web3j web3j, @Qualifier("deployedContractAddress") String contractAddress, Credentials credentials) {
+    public VoteService(Web3j web3j, @Qualifier("deployedContractAddress") String contractAddress, List<Credentials> credentials) {
         this.web3j = web3j;
         this.contractAddress = contractAddress;
         this.credentials = credentials;
@@ -52,12 +54,14 @@ public class VoteService {
         }
         log.info("castVote commitmentHash {}", commitmentHash);
 
+        Credentials currentVoter = credentials.get(voterIndex.getAndIncrement() % credentials.size());
+
         try {
             // load the contract wrapper
             CommitmentRegistry registry = CommitmentRegistry.load(
                     contractAddress,
                     web3j,
-                    credentials,
+                    currentVoter,
                     new StaticGasProvider(GAS_PRICE, GAS_LIMIT)
             );
 
@@ -77,12 +81,17 @@ public class VoteService {
 
             // Ask the node: "What happens if I send this?"
             EthCall ethCall = web3j.ethCall(
-                    Transaction.createEthCallTransaction(credentials.getAddress(), contractAddress, encodedFunction),
+                    Transaction.createEthCallTransaction(currentVoter.getAddress(), contractAddress, encodedFunction),
                     org.web3j.protocol.core.DefaultBlockParameterName.LATEST
             ).send();
 
             // 3. Check results
             if (ethCall.isReverted()) {
+                String revertReason = ethCall.getRevertReason();
+                if (revertReason != null && revertReason.contains("Vote already committed")) {
+                    log.warn("Voter committed duplicated vote");
+                    throw new VoteAlreadyExistsException("Vote with this commitment already exists");
+                }
                 // This prints the REAL reason (e.g., "Vote already committed")
                 log.error("💥 Contract Revert Reason: {}", ethCall.getRevertReason());
                 throw new BlockchainException("Contract Reverted: " + ethCall.getRevertReason());
@@ -96,6 +105,8 @@ public class VoteService {
 
             // return the hash of the transaction
             return receipt.getTransactionHash();
+        } catch (VoteAlreadyExistsException e) {
+            throw e; // let it free to be handled by the global exception handler
         } catch (Exception e) {
             throw new BlockchainException("Failed to cast vote", e);
         }
