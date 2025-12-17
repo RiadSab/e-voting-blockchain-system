@@ -17,6 +17,5 @@ contract DeployScript is Script {
 
         // 4. Log for Humans (Optional)
         console.log("Deployed CommitmentRegistry at:", address(registry));
-        
        }
 }

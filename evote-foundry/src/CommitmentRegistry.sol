@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+//! NOT USED ANYMORE, WILL BE DELETED LATER
 pragma solidity ^0.8.19;
 
 contract CommitmentRegistry {

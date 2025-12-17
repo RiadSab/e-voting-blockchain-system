@@ -1,0 +1,6 @@
+[submodule "evote-foundry/lib/semaphore"]
+	path = evote-foundry/lib/semaphore
+	url = https://github.com/semaphore-protocol/semaphore
+[submodule "evote-foundry/lib/openzeppelin-contracts"]
+	path = evote-foundry/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
