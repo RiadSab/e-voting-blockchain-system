@@ -3,18 +3,25 @@ src = "src"
 out = "out"
 libs = ["lib"]
 
-solc_version = "0.8.23"
+solc_version = "0.8.28"
 via_ir = true
 optimizer = true
 optimizer_runs = 200
 
-# for ZK proofs
-fs_permissions = [{ access = "write", path = "./"}]
+# File system permissions for scripts/tests that read/write local files.
+# Needed for deployment scripts that merge into deployments/deployments.json.
+fs_permissions = [
+	{ access = "read-write", path = "./deployments" },
+	# kept for existing ZK tooling that writes files under the repo
+	{ access = "write", path = "./" }
+]
 
 # Remappings
 remappings = [
 	"@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
-	"@semaphore/contracts/=lib/semaphore/packages/contracts/contracts/"
+	"@semaphore/contracts/=lib/semaphore/packages/contracts/contracts/",
+	"@zk-kit/lean-imt.sol=lib/semaphore/node_modules/@zk-kit/lean-imt.sol",
+	"@zk-kit=lib/semaphore/node_modules/@zk-kit"
 ]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

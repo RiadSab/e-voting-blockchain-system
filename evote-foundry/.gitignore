@@ -2,6 +2,9 @@
 cache/
 out/
 
+# Generated artifacts (ABI/BIN/Web3j wrappers)
+generated/
+
 # Ignores development broadcast logs
 !/broadcast
 /broadcast/*/31337/

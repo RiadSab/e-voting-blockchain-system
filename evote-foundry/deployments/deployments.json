@@ -1,7 +1,9 @@
 {
-  "chainId": "31337",
-  "factory": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+  "chainId": "11155111",
+  "factory": "0xA8452Ec99ce0C64f20701dB7dD3abDb607c00496",
   "network": "anvil-hardhat",
-  "tallyVerifier": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
-  "voteVerifier": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
+  "semaphore": "0xe40B63bC1F8D1d2274ce077aF58838a3f04Ec50d",
+  "semaphoreGroupId": 1,
+  "semaphoreMerkleRoot": 0,
+  "tallyVerifier": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
 }
