@@ -61,9 +61,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 HttpStatus.CONFLICT,
                 "You have already cast a vote in this election.");
         problemDetail.setProperty(TIMESTAMP_KEY, Instant.now());
-        problemDetail.setProperty("zbi", "12345");
         problemDetail.setTitle("Duplicate Vote");
         problemDetail.setType(URI.create("https://api.evote.com/errors/duplicate-vote"));
+        return problemDetail;
+    }
+
+    @ExceptionHandler(BlockchainTxException.class)
+    ProblemDetail handleBlockchainTxException(BlockchainTxException e) {
+        log.warn("Blockchain transaction exception: {}", e.getMessage());
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "A blockchain transaction error occurred.");
+        problemDetail.setProperty(TIMESTAMP_KEY, Instant.now());
+        problemDetail.setTitle("Blockchain Transaction Error");
+        problemDetail.setType(URI.create("https://api.evote.com/errors/blockchain-tx-error"));
         return problemDetail;
     }
 }

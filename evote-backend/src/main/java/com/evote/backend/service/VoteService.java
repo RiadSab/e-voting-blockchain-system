@@ -27,22 +27,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class VoteService {
-    private final Web3j web3j;
-
-    private final String contractAddress;
-
-    private final List<Credentials> credentials;
-    private final AtomicInteger voterIndex = new AtomicInteger(8);
-    private static final BigInteger GAS_LIMIT = BigInteger.valueOf(500_000);
-    private static final BigInteger GAS_PRICE = BigInteger.valueOf(20_000_000_000L); // 20 Gwei
+//    private final Web3j web3j;
+//
+//    private final String contractAddress;
+//
+//    private final List<Credentials> credentials;
+//    private final AtomicInteger voterIndex = new AtomicInteger(8);
+//    private static final BigInteger GAS_LIMIT = BigInteger.valueOf(500_000);
+//    private static final BigInteger GAS_PRICE = BigInteger.valueOf(20_000_000_000L); // 20 Gwei
 
     Logger log = LoggerFactory.getLogger(VoteService.class);
 
-    public VoteService(Web3j web3j, @Qualifier("deployedContractAddress") String contractAddress, List<Credentials> credentials) {
-        this.web3j = web3j;
-        this.contractAddress = contractAddress;
-        this.credentials = credentials;
-    }
+
 
 
 //    public String castVote(SubmitVoteRequest voteRequest) {
