@@ -1,7 +1,6 @@
 package com.evote.backend.service;
 
-import com.evote.backend.contract.CommitmentRegistry;
-import com.evote.backend.dto.VoteRequest;
+import com.evote.backend.dto.SubmitVoteRequest;
 import com.evote.backend.exception.BlockchainException;
 import com.evote.backend.exception.InvalidVoteException;
 import com.evote.backend.exception.VoteAlreadyExistsException;
@@ -46,70 +45,70 @@ public class VoteService {
     }
 
 
-    public String castVote(VoteRequest voteRequest) {
-        String commitmentHash = voteRequest.getCommitment();
-        //double check (even though the validation should have been done at controller level)
-        if(commitmentHash == null || !commitmentHash.startsWith("0x")) {
-            throw new InvalidVoteException("Commitment hash is invalid");
-        }
-        log.info("castVote commitmentHash {}", commitmentHash);
-
-        Credentials currentVoter = credentials.get(voterIndex.getAndIncrement() % credentials.size());
-
-        try {
-            // load the contract wrapper
-            CommitmentRegistry registry = CommitmentRegistry.load(
-                    contractAddress,
-                    web3j,
-                    currentVoter,
-                    new StaticGasProvider(GAS_PRICE, GAS_LIMIT)
-            );
-
-            //convert commitmentHash to byte32
-            byte[] rawBytes = Numeric.hexStringToByteArray(commitmentHash);
-            byte[] fixedBytes = new byte[32];
-            System.arraycopy(rawBytes, 0, fixedBytes, 0, Math.min(rawBytes.length, 32));
-
-            // SIMULATE THE CALL
-            Function function = new Function(
-                    "submitCommitment", // Function name in Solidity
-                    List.of(new Bytes32(fixedBytes)), // Input parameters
-                    Collections.emptyList() // Output parameters (void)
-            );
-
-            String encodedFunction = FunctionEncoder.encode(function);
-
-            // Ask the node: "What happens if I send this?"
-            EthCall ethCall = web3j.ethCall(
-                    Transaction.createEthCallTransaction(currentVoter.getAddress(), contractAddress, encodedFunction),
-                    org.web3j.protocol.core.DefaultBlockParameterName.LATEST
-            ).send();
-
-            // 3. Check results
-            if (ethCall.isReverted()) {
-                String revertReason = ethCall.getRevertReason();
-                if (revertReason != null && revertReason.contains("Vote already committed")) {
-                    log.warn("Voter committed duplicated vote");
-                    throw new VoteAlreadyExistsException("Vote with this commitment already exists");
-                }
-                // This prints the REAL reason (e.g., "Vote already committed")
-                log.error("💥 Contract Revert Reason: {}", ethCall.getRevertReason());
-                throw new BlockchainException("Contract Reverted: " + ethCall.getRevertReason());
-            }
-
-            log.info("Simulation Passed. Sending Real Transaction...");
-
-
-            // call the smart contract method to register the commitment
-            TransactionReceipt receipt = registry.submitCommitment(fixedBytes).send();
-
-            // return the hash of the transaction
-            return receipt.getTransactionHash();
-        } catch (VoteAlreadyExistsException e) {
-            throw e; // let it free to be handled by the global exception handler
-        } catch (Exception e) {
-            throw new BlockchainException("Failed to cast vote", e);
-        }
-    }
+//    public String castVote(SubmitVoteRequest voteRequest) {
+//        String commitmentHash = voteRequest.getCommitment();
+//        //double check (even though the validation should have been done at controller level)
+//        if(commitmentHash == null || !commitmentHash.startsWith("0x")) {
+//            throw new InvalidVoteException("Commitment hash is invalid");
+//        }
+//        log.info("castVote commitmentHash {}", commitmentHash);
+//
+//        Credentials currentVoter = credentials.get(voterIndex.getAndIncrement() % credentials.size());
+//
+//        try {
+//            // load the contract wrapper
+//            CommitmentRegistry registry = CommitmentRegistry.load(
+//                    contractAddress,
+//                    web3j,
+//                    currentVoter,
+//                    new StaticGasProvider(GAS_PRICE, GAS_LIMIT)
+//            );
+//
+//            //convert commitmentHash to byte32
+//            byte[] rawBytes = Numeric.hexStringToByteArray(commitmentHash);
+//            byte[] fixedBytes = new byte[32];
+//            System.arraycopy(rawBytes, 0, fixedBytes, 0, Math.min(rawBytes.length, 32));
+//
+//            // SIMULATE THE CALL
+//            Function function = new Function(
+//                    "submitCommitment", // Function name in Solidity
+//                    List.of(new Bytes32(fixedBytes)), // Input parameters
+//                    Collections.emptyList() // Output parameters (void)
+//            );
+//
+//            String encodedFunction = FunctionEncoder.encode(function);
+//
+//            // Ask the node: "What happens if I send this?"
+//            EthCall ethCall = web3j.ethCall(
+//                    Transaction.createEthCallTransaction(currentVoter.getAddress(), contractAddress, encodedFunction),
+//                    org.web3j.protocol.core.DefaultBlockParameterName.LATEST
+//            ).send();
+//
+//            // 3. Check results
+//            if (ethCall.isReverted()) {
+//                String revertReason = ethCall.getRevertReason();
+//                if (revertReason != null && revertReason.contains("Vote already committed")) {
+//                    log.warn("Voter committed duplicated vote");
+//                    throw new VoteAlreadyExistsException("Vote with this commitment already exists");
+//                }
+//                // This prints the REAL reason (e.g., "Vote already committed")
+//                log.error("💥 Contract Revert Reason: {}", ethCall.getRevertReason());
+//                throw new BlockchainException("Contract Reverted: " + ethCall.getRevertReason());
+//            }
+//
+//            log.info("Simulation Passed. Sending Real Transaction...");
+//
+//
+//            // call the smart contract method to register the commitment
+//            TransactionReceipt receipt = registry.submitCommitment(fixedBytes).send();
+//
+//            // return the hash of the transaction
+//            return receipt.getTransactionHash();
+//        } catch (VoteAlreadyExistsException e) {
+//            throw e; // let it free to be handled by the global exception handler
+//        } catch (Exception e) {
+//            throw new BlockchainException("Failed to cast vote", e);
+//        }
+//    }
 
 }

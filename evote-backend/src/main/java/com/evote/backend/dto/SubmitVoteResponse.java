@@ -5,7 +5,10 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class VoteResponse {
-    private String message;
+public class SubmitVoteResponse {
     private String transactionHash;
+    private VoteStatus status;
+    private Long timestamp;
+    private Long blockNumber;
+    private String message;
 }
