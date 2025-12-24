@@ -13,7 +13,7 @@ public class DeploymentsInfo {
     private final String network;
     private final String factory;
     private final String tallyVerifier;
-
+    private final String semaphoreAddress;
 
     public Optional<String> getTallyVerifier() {
         return (tallyVerifier == null || tallyVerifier.equalsIgnoreCase("0x0000000000000000000000000000000000000000"))

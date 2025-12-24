@@ -6,7 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 
 
 @EqualsAndHashCode(callSuper = true)
@@ -14,7 +13,7 @@ import lombok.Getter;
 @Entity
 @Table(name = "elections")
 
-public class Election extends BaseEntityUuid {
+public class ElectionEntity extends BaseEntityUuid {
 
     private String electionName;
     private String electionIdOnChain; //todo: found out if we need this field

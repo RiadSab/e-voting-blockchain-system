@@ -78,4 +78,35 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problemDetail.setType(URI.create("https://api.evote.com/errors/blockchain-tx-error"));
         return problemDetail;
     }
+
+    @ExceptionHandler(BlockchainReadException.class)
+    ProblemDetail handleBlockchainReadException(BlockchainReadException e) {
+        log.warn("Blockchain read failed op={} corr={} contract={} msg={}",
+                e.getOperation(), e.getCorrelationId(), e.getContractAddress(), e.getMessage(), e);
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_GATEWAY,
+                "A blockchain read error occurred.");
+
+        problemDetail.setTitle("Blockchain Read Error");
+        problemDetail.setType(URI.create("https://api.evote.com/errors/blockchain-read-error"));
+
+        problemDetail.setProperty(TIMESTAMP_KEY, Instant.now());
+        problemDetail.setProperty("correlationId", e.getCorrelationId());
+        problemDetail.setProperty("operation", e.getOperation());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ProblemDetail handleIllegalArgumentException(IllegalArgumentException e) {
+        log.warn("Illegal argument: {}", e.getMessage());
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage());
+        problemDetail.setProperty(TIMESTAMP_KEY, Instant.now());
+        problemDetail.setTitle("Bad Request");
+        problemDetail.setType(URI.create("https://api.evote.com/errors/invalid-argument"));
+        return problemDetail;
+    }
 }

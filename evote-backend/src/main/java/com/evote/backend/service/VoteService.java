@@ -1,110 +1,84 @@
 package com.evote.backend.service;
 
+
+import static com.evote.backend.mapper.VoteParamMapper.toBigInt;
+import static com.evote.backend.mapper.VoteParamMapper.toBigIntList;
+import com.evote.backend.contract.Election;
 import com.evote.backend.dto.SubmitVoteRequest;
-import com.evote.backend.exception.BlockchainException;
-import com.evote.backend.exception.InvalidVoteException;
-import com.evote.backend.exception.VoteAlreadyExistsException;
+import com.evote.backend.dto.SubmitVoteResponse;
+import com.evote.backend.dto.VoteStatus;
+import com.evote.backend.entitiy.records.TxResult;
+import com.evote.backend.factory.ContractLoader;
+import com.evote.backend.repository.ElectionRepository;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.web3j.crypto.Credentials;
-import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.methods.request.Transaction;
-import org.web3j.protocol.core.methods.response.EthCall;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
-import org.web3j.tx.gas.StaticGasProvider;
-import org.web3j.utils.Numeric;
-
-import org.web3j.abi.FunctionEncoder;
-import org.web3j.abi.datatypes.Function;
-import org.web3j.abi.datatypes.generated.Bytes32;
 
 import java.math.BigInteger;
-import java.util.Collections;
+import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.UUID;
+
 
 @Service
+@RequiredArgsConstructor
 public class VoteService {
-//    private final Web3j web3j;
-//
-//    private final String contractAddress;
-//
-//    private final List<Credentials> credentials;
-//    private final AtomicInteger voterIndex = new AtomicInteger(8);
-//    private static final BigInteger GAS_LIMIT = BigInteger.valueOf(500_000);
-//    private static final BigInteger GAS_PRICE = BigInteger.valueOf(20_000_000_000L); // 20 Gwei
+
+    private final BlockchainTransactionService txService;
+    private final ContractLoader contractLoader;
+    private final ElectionRepository electionRepo;
 
     Logger log = LoggerFactory.getLogger(VoteService.class);
 
+    public SubmitVoteResponse submitVote(SubmitVoteRequest req, UUID electionId){
+
+        String electionContractAddress = electionRepo.findAddressById(electionId)
+                .orElseThrow(() -> new IllegalArgumentException("Election not found"));
 
 
+        Election electionContract = contractLoader.loadElectionContract(electionContractAddress);
 
-//    public String castVote(SubmitVoteRequest voteRequest) {
-//        String commitmentHash = voteRequest.getCommitment();
-//        //double check (even though the validation should have been done at controller level)
-//        if(commitmentHash == null || !commitmentHash.startsWith("0x")) {
-//            throw new InvalidVoteException("Commitment hash is invalid");
-//        }
-//        log.info("castVote commitmentHash {}", commitmentHash);
-//
-//        Credentials currentVoter = credentials.get(voterIndex.getAndIncrement() % credentials.size());
-//
-//        try {
-//            // load the contract wrapper
-//            CommitmentRegistry registry = CommitmentRegistry.load(
-//                    contractAddress,
-//                    web3j,
-//                    currentVoter,
-//                    new StaticGasProvider(GAS_PRICE, GAS_LIMIT)
-//            );
-//
-//            //convert commitmentHash to byte32
-//            byte[] rawBytes = Numeric.hexStringToByteArray(commitmentHash);
-//            byte[] fixedBytes = new byte[32];
-//            System.arraycopy(rawBytes, 0, fixedBytes, 0, Math.min(rawBytes.length, 32));
-//
-//            // SIMULATE THE CALL
-//            Function function = new Function(
-//                    "submitCommitment", // Function name in Solidity
-//                    List.of(new Bytes32(fixedBytes)), // Input parameters
-//                    Collections.emptyList() // Output parameters (void)
-//            );
-//
-//            String encodedFunction = FunctionEncoder.encode(function);
-//
-//            // Ask the node: "What happens if I send this?"
-//            EthCall ethCall = web3j.ethCall(
-//                    Transaction.createEthCallTransaction(currentVoter.getAddress(), contractAddress, encodedFunction),
-//                    org.web3j.protocol.core.DefaultBlockParameterName.LATEST
-//            ).send();
-//
-//            // 3. Check results
-//            if (ethCall.isReverted()) {
-//                String revertReason = ethCall.getRevertReason();
-//                if (revertReason != null && revertReason.contains("Vote already committed")) {
-//                    log.warn("Voter committed duplicated vote");
-//                    throw new VoteAlreadyExistsException("Vote with this commitment already exists");
-//                }
-//                // This prints the REAL reason (e.g., "Vote already committed")
-//                log.error("💥 Contract Revert Reason: {}", ethCall.getRevertReason());
-//                throw new BlockchainException("Contract Reverted: " + ethCall.getRevertReason());
-//            }
-//
-//            log.info("Simulation Passed. Sending Real Transaction...");
-//
-//
-//            // call the smart contract method to register the commitment
-//            TransactionReceipt receipt = registry.submitCommitment(fixedBytes).send();
-//
-//            // return the hash of the transaction
-//            return receipt.getTransactionHash();
-//        } catch (VoteAlreadyExistsException e) {
-//            throw e; // let it free to be handled by the global exception handler
-//        } catch (Exception e) {
-//            throw new BlockchainException("Failed to cast vote", e);
-//        }
-//    }
+        BigInteger c1x = toBigInt(req.getC1x(), "c1x");
+        BigInteger c1y = toBigInt(req.getC1y(), "c1y");
+        BigInteger c2x = toBigInt(req.getC2x(), "c2x");
+        BigInteger c2y = toBigInt(req.getC2y(), "c2y");
 
+        // SemaphoreProof signature:
+        // SemaphoreProof(BigInteger merkleTreeDepth, BigInteger merkleTreeRoot,
+        //                BigInteger nullifier, BigInteger message, BigInteger scope,
+        //                List<BigInteger> points)
+
+        var reqProof = req.getSemaphoreProof();
+
+        BigInteger merkleTreeDepth = toBigInt(reqProof.getMerkleTreeDepth(), "merkleTreeDepth");
+        BigInteger merkleTreeRoot = toBigInt(reqProof.getMerkleRoot(), "merkleTreeRoot");
+        BigInteger nullifier = toBigInt(reqProof.getNullifier(), "nullifier");
+        BigInteger message = toBigInt(reqProof.getMessage(), "message");
+        BigInteger scope = toBigInt(reqProof.getScope(), "scope");
+
+        List<BigInteger> points = toBigIntList(reqProof.getProof(), "proof");
+
+        if (points.size() != 8) {
+            throw new IllegalArgumentException("proof must have exactly 8 elements, got " + points.size());
+        }
+
+        Election.SemaphoreProof semaphoreProof = new Election.SemaphoreProof(
+                merkleTreeDepth, merkleTreeRoot, nullifier, message, scope, points
+        );
+
+        TxResult txResult = txService.sendAndWait("submitVote",
+                () -> electionContract.submitVote(c1x, c1y, c2x, c2y, semaphoreProof)
+        );
+
+        log.info("Vote submitted in tx {}", txResult.txHash());
+
+        return new SubmitVoteResponse(
+                txResult.txHash(),
+                VoteStatus.SUCCESS,
+                Instant.now().getEpochSecond(),
+                txResult.receipt().getBlockNumber(),
+                "Vote submitted successfully"
+        );
+    }
 }

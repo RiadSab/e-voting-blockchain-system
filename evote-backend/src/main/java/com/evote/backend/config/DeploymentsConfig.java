@@ -1,5 +1,6 @@
 package com.evote.backend.config;
 
+import com.evote.backend.dto.SemaphoreInputsDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -31,10 +32,11 @@ public class DeploymentsConfig {
             String network = getFieldAsText(rootNode, "network");
             String factory = getFieldAsText(rootNode, "factory");
             String tallyVerifier = getOptionalFieldAsText(rootNode, "tallyVerifier");
+            String semaphoreAddress = getFieldAsText(rootNode, "semaphore");
 
             log.info("Loaded deployments info for network '{}', chainId {}", network, chainId);
 
-            return new DeploymentsInfo(chainId, network, factory, tallyVerifier);
+            return new DeploymentsInfo(chainId, network, factory, tallyVerifier, semaphoreAddress);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to load deployments info from path: " + deploymentInfoPath, e);
         }

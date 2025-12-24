@@ -13,8 +13,12 @@ public class SemaphoreProofDto {
     @NotBlank
     private String message;
 
+    private String merkleTreeDepth;
+
+
     @NotBlank
-    private String nullifierHash;
+    private String nullifier;
+
 
     @NotBlank
     private String scope;

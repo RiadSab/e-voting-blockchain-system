@@ -47,5 +47,4 @@ public class BlockchainTxException extends RuntimeException {
     if (cause != null && cause.getMessage() != null) base += " cause=" + cause.getMessage();
     return base;
   }
-
 }

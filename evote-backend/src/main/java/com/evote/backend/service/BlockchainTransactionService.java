@@ -5,14 +5,12 @@ import com.evote.backend.entitiy.records.TxResult;
 import com.evote.backend.exception.BlockchainTxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.exceptions.ClientConnectionException;
 import org.web3j.protocol.exceptions.TransactionException;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,6 +28,7 @@ public class BlockchainTransactionService {
 
     private final ReentrantLock nonceLock = new ReentrantLock(true);
 
+    // We were using a default retry policy, now we are using the Bean injected
     private final RetryPolicy retryPolicy;
 
     public BlockchainTransactionService(RetryPolicy retryPolicy) {
@@ -37,10 +36,6 @@ public class BlockchainTransactionService {
     }
 
 
-
-    public static RetryPolicy defaultPolicy() {
-        return new RetryPolicy(3, Duration.ofMillis(250), Duration.ofSeconds(3));
-    }
 
     public TxResult sendAndWait(
             String operation,
@@ -133,9 +128,9 @@ public class BlockchainTransactionService {
         return new BlockchainTxException(operation, senderKey, correlationId, null, null, e);
     }
 
-    private static Duration nextBackoff(Duration current) {
+    private  Duration nextBackoff(Duration current) {
         long doubled = Math.max(1, current.toMillis()) * 2;
-        return Duration.ofMillis(Math.min(doubled, defaultPolicy().maxBackoff().toMillis()));
+        return Duration.ofMillis(Math.min(doubled, retryPolicy.maxBackoff().toMillis()));
         // If you prefer: use retryPolicy.maxBackoff() but then method cannot be static.
     }
 
@@ -148,8 +143,8 @@ public class BlockchainTransactionService {
         }
     }
 
-    private static boolean shouldRetryMempoolOrNonce(RuntimeException e, int attempt) {
-        if (attempt >= defaultPolicy().maxAttempts()) return false;
+    private  boolean shouldRetryMempoolOrNonce(RuntimeException e, int attempt) {
+        if (attempt >= retryPolicy.maxAttempts()) return false;
         String msg = (e.getMessage() == null) ? "" : e.getMessage().toLowerCase();
         return msg.contains("nonce too low")
                 || msg.contains("replacement transaction underpriced")
@@ -167,4 +162,6 @@ public class BlockchainTransactionService {
     private static Optional<String> extractRevertReason(TransactionException e) {
         return e.getTransactionReceipt().map(TransactionReceipt::getRevertReason);
     }
+
+
 }
