@@ -1,8 +1,6 @@
 package com.evote.backend.controller;
 
-import com.evote.backend.dto.SemaphoreInputsDto;
-import com.evote.backend.dto.SubmitVoteRequest;
-import com.evote.backend.dto.SubmitVoteResponse;
+import com.evote.backend.dto.*;
 import com.evote.backend.service.ElectionService;
 import com.evote.backend.service.VoteService;
 import jakarta.validation.Valid;
@@ -31,5 +29,15 @@ public class ElectionController {
             @Valid @RequestBody SubmitVoteRequest voteRequest
     ) {
         return ResponseEntity.ok(voteService.submitVote(voteRequest, electionId));
+    }
+
+
+    //TODO : Store commitments in DB to prevent duplicates and gas fees
+    @PostMapping("/{electionId}/registration")
+    public ResponseEntity<VoterRegistrationResponse> registerVoter(
+            @PathVariable UUID electionId,
+            @Valid @RequestBody VoterRegistrationRequest registrationRequest
+            ) {
+        return ResponseEntity.status(201).body(electionService.registerVoter(electionId, registrationRequest));
     }
 }

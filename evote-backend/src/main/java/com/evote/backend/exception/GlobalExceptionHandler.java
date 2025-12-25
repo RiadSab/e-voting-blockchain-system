@@ -109,4 +109,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problemDetail.setType(URI.create("https://api.evote.com/errors/invalid-argument"));
         return problemDetail;
     }
+
+    @ExceptionHandler(VoterAlreadyRegisteredException.class)
+    public ProblemDetail handleVoterAlreadyRegisteredException(VoterAlreadyRegisteredException e) {
+        log.warn("Voter already registered: {}", e.getMessage());
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                "Voter already registered for this election.");
+        problemDetail.setProperty(TIMESTAMP_KEY, Instant.now());
+        problemDetail.setTitle("Already Registered");
+        problemDetail.setProperty("electionId", e.getElectionId());
+        problemDetail.setType(URI.create("https://api.evote.com/errors/voter-already-registered"));
+        return problemDetail;
+    }
 }

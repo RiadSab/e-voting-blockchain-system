@@ -25,6 +25,7 @@ import java.util.UUID;
                     columnNames = {"election_id", "nullifier"}
             )
     })
+
 public class Vote extends BaseEntitySeq {
     @Column(nullable = false)
     private UUID electionId;

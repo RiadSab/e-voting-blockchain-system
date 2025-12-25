@@ -66,6 +66,12 @@ public class BlockchainTransactionService {
             attempt++;
             try {
                 TransactionReceipt receipt = doSend(txCallSupplier);
+
+                if(receipt.getStatus() != null && !"0x1".equals(receipt.getStatus())){
+                    String txHash = receipt.getTransactionHash();
+                    String revertReason = receipt.getRevertReason();
+                    throw new BlockchainTxException(operation, senderKey,correlationId, txHash, revertReason, null);
+                }
                 logSuccess(operation, attempt, receipt, correlationId);
                 return TxResult.success(operation, correlationId, receipt);
 
@@ -108,24 +114,38 @@ public class BlockchainTransactionService {
                 operation, attempt, receipt.getTransactionHash(), correlationId);
     }
 
-    private BlockchainTxException mapTransactionException(String operation, String correlationId, int attempt, TransactionException e) {
-        String txHash = extractTxHash(e).orElse(null);
-        String revertReason = extractRevertReason(e).orElse(null);
+    private BlockchainTxException mapRpcFailure(
+            String operation,
+            String correlationId,
+            int attempt,
+            ClientConnectionException e
+    ) {
+        log.error("RPC failure op={} attempt={} correlationId={}", operation, attempt, correlationId, e);
+        return new BlockchainTxException(operation, senderKey, correlationId, null, null, e);
+    }
 
-        log.warn("tx TransactionException op={} attempt={} txHash={} reason={} corr={}",
-                operation, attempt, txHash, revertReason, correlationId);
+    private BlockchainTxException mapTransactionException(
+            String operation,
+            String correlationId,
+            int attempt,
+            TransactionException e
+    ) {
+        String txHash = extractTxHash(e).orElse(null);
+
+        String revertReason = extractRevertReason(e).orElseGet(() -> extractRevertReason2(e)); // your helper (best-effort)
+
+        log.warn(
+                "Tx failed op={} attempt={} correlationId={} txHash={} revertReason={}",
+                operation, attempt, correlationId, txHash, revertReason, e
+        );
 
         return new BlockchainTxException(operation, senderKey, correlationId, txHash, revertReason, e);
     }
 
-    private BlockchainTxException mapRpcFailure(String operation, String correlationId, int attempt, Exception e) {
-        log.error("tx rpc failure op={} attempts={} corr={}", operation, attempt, correlationId, e);
-        return new BlockchainTxException(operation, senderKey, correlationId, null, null, e);
-    }
-
     private BlockchainTxException mapUnexpected(String operation, String correlationId, int attempt, RuntimeException e) {
         log.error("tx unexpected failure op={} attempt={} corr={}", operation, attempt, correlationId, e);
-        return new BlockchainTxException(operation, senderKey, correlationId, null, null, e);
+        String revertReason = extractRevertReason2(e);
+        return new BlockchainTxException(operation, senderKey, correlationId, null, revertReason, e);
     }
 
     private  Duration nextBackoff(Duration current) {
@@ -161,7 +181,19 @@ public class BlockchainTransactionService {
 
     private static Optional<String> extractRevertReason(TransactionException e) {
         return e.getTransactionReceipt().map(TransactionReceipt::getRevertReason);
+
+    }
+
+    private static String extractRevertReason2(Throwable t) {
+        Throwable cur = t;
+        while (cur != null) {
+            String m = cur.getMessage();
+            if (m != null && m.toLowerCase().contains("revert")) return m;
+            cur = cur.getCause();
+        }
+        return null;
     }
 
 
 }
+

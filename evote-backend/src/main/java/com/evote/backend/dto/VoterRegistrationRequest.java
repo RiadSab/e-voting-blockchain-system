@@ -5,8 +5,6 @@ import lombok.Data;
 
 @Data
 public class VoterRegistrationRequest {
-    @NotBlank
-    private String electionId;
 
     @NotBlank
     private String identityCommitment;
