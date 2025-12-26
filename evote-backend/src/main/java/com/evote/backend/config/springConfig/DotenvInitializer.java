@@ -1,4 +1,4 @@
-package com.evote.backend.config;
+package com.evote.backend.config.springConfig;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import org.slf4j.Logger;

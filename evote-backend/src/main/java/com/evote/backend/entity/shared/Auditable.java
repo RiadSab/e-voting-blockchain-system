@@ -1,4 +1,4 @@
-package com.evote.backend.entitiy.shared;
+package com.evote.backend.entity.shared;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;

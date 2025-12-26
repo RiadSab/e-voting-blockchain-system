@@ -1,7 +1,7 @@
-package com.evote.backend.entitiy;
+package com.evote.backend.entity;
 
 import com.evote.backend.dto.VoteStatus;
-import com.evote.backend.entitiy.shared.BaseEntitySeq;
+import com.evote.backend.entity.shared.BaseEntitySeq;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

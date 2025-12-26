@@ -1,4 +1,4 @@
-package com.evote.backend.config;
+package com.evote.backend.config.web3Config;
 
 import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;

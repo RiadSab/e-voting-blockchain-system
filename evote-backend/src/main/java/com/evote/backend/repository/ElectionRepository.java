@@ -1,6 +1,6 @@
 package com.evote.backend.repository;
 
-import com.evote.backend.entitiy.ElectionEntity;
+import com.evote.backend.entity.ElectionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

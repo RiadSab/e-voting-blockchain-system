@@ -1,6 +1,6 @@
 package com.evote.backend.factory;
 
-import com.evote.backend.config.DeploymentsInfo;
+import com.evote.backend.config.web3Config.DeploymentsInfo;
 import com.evote.backend.contract.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

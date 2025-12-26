@@ -1,10 +1,11 @@
 package com.evote.backend.service;
 
-import com.evote.backend.entitiy.records.RetryPolicy;
-import com.evote.backend.entitiy.records.TxResult;
-import com.evote.backend.exception.BlockchainTxException;
+import com.evote.backend.entity.txUtilities.RetryPolicy;
+import com.evote.backend.entity.txUtilities.TxResult;
+import com.evote.backend.exception.blockchainExceptions.BlockchainTxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -44,7 +45,9 @@ public class BlockchainTransactionService {
         Objects.requireNonNull(operation, "operation");
         Objects.requireNonNull(txCallSupplier, "txCallSupplier");
 
-        String correlationId = UUID.randomUUID().toString();
+        String correlationId = Optional.ofNullable(MDC.get("correlationId"))
+                .orElse(UUID.randomUUID().toString());
+
 
         nonceLock.lock();
         try {
@@ -66,12 +69,16 @@ public class BlockchainTransactionService {
             attempt++;
             try {
                 TransactionReceipt receipt = doSend(txCallSupplier);
+                String status = receipt.getStatus();
 
-                if(receipt.getStatus() != null && !"0x1".equals(receipt.getStatus())){
+                // Check status field for failure indication
+                if (status != null && !status.equalsIgnoreCase("0x1") && !status.equalsIgnoreCase("0x01")) {
                     String txHash = receipt.getTransactionHash();
                     String revertReason = receipt.getRevertReason();
-                    throw new BlockchainTxException(operation, senderKey,correlationId, txHash, revertReason, null);
+                    throw new BlockchainTxException(operation, senderKey,correlationId, txHash, revertReason,
+                            new IllegalStateException("Transaction receipt status indicates failure: " + status));
                 }
+
                 logSuccess(operation, attempt, receipt, correlationId);
                 return TxResult.success(operation, correlationId, receipt);
 
@@ -121,7 +128,13 @@ public class BlockchainTransactionService {
             ClientConnectionException e
     ) {
         log.error("RPC failure op={} attempt={} correlationId={}", operation, attempt, correlationId, e);
-        return new BlockchainTxException(operation, senderKey, correlationId, null, null, e);
+        return new BlockchainTxException(operation,
+                senderKey,
+                correlationId,
+                null,
+                null,
+                e
+        );
     }
 
     private BlockchainTxException mapTransactionException(
@@ -132,26 +145,38 @@ public class BlockchainTransactionService {
     ) {
         String txHash = extractTxHash(e).orElse(null);
 
-        String revertReason = extractRevertReason(e).orElseGet(() -> extractRevertReason2(e)); // your helper (best-effort)
+        String revertReason = extractRevertReason(e).orElseGet(() -> extractRevertReasonFromException(e)); // fallback to generic exception analysis
 
         log.warn(
                 "Tx failed op={} attempt={} correlationId={} txHash={} revertReason={}",
                 operation, attempt, correlationId, txHash, revertReason, e
         );
 
-        return new BlockchainTxException(operation, senderKey, correlationId, txHash, revertReason, e);
+        return new BlockchainTxException(operation,
+                senderKey,
+                correlationId,
+                txHash,
+                revertReason,
+                e
+        );
     }
 
     private BlockchainTxException mapUnexpected(String operation, String correlationId, int attempt, RuntimeException e) {
         log.error("tx unexpected failure op={} attempt={} corr={}", operation, attempt, correlationId, e);
-        String revertReason = extractRevertReason2(e);
-        return new BlockchainTxException(operation, senderKey, correlationId, null, revertReason, e);
+        String revertReason = extractRevertReasonFromException(e);
+        return new BlockchainTxException(
+                operation,
+                senderKey,
+                correlationId,
+                null,
+                revertReason,
+                e
+        );
     }
 
     private  Duration nextBackoff(Duration current) {
         long doubled = Math.max(1, current.toMillis()) * 2;
         return Duration.ofMillis(Math.min(doubled, retryPolicy.maxBackoff().toMillis()));
-        // If you prefer: use retryPolicy.maxBackoff() but then method cannot be static.
     }
 
     private static void sleep(Duration d) {
@@ -179,12 +204,14 @@ public class BlockchainTransactionService {
         return e.getTransactionReceipt().map(TransactionReceipt::getTransactionHash);
     }
 
+    // extraction of revert reason from TransactionException
     private static Optional<String> extractRevertReason(TransactionException e) {
         return e.getTransactionReceipt().map(TransactionReceipt::getRevertReason);
 
     }
 
-    private static String extractRevertReason2(Throwable t) {
+    // fallback extraction of revert reason from exception chain
+    private static String extractRevertReasonFromException(Throwable t) {
         Throwable cur = t;
         while (cur != null) {
             String m = cur.getMessage();
@@ -193,7 +220,4 @@ public class BlockchainTransactionService {
         }
         return null;
     }
-
-
 }
-

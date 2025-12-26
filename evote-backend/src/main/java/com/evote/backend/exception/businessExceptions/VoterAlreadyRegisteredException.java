@@ -1,20 +1,19 @@
-package com.evote.backend.exception;
+package com.evote.backend.exception.businessExceptions;
 
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigInteger;
-import java.util.UUID;
 
 @Getter @Setter
 public class VoterAlreadyRegisteredException extends RuntimeException {
-    private final UUID electionId;
+    private final String electionId;
     private final BigInteger identityCommitment; // optional to expose
     private final String txHash;                 // optional
     private final String correlationId;          // optional
 
     public VoterAlreadyRegisteredException(
-            UUID electionId,
+            String electionId,
             BigInteger identityCommitment,
             String txHash,
             String correlationId,

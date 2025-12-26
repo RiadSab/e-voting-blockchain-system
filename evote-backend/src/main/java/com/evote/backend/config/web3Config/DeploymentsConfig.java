@@ -1,6 +1,5 @@
-package com.evote.backend.config;
+package com.evote.backend.config.web3Config;
 
-import com.evote.backend.dto.SemaphoreInputsDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;

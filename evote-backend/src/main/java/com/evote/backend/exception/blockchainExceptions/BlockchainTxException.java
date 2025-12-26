@@ -1,4 +1,4 @@
-package com.evote.backend.exception;
+package com.evote.backend.exception.blockchainExceptions;
 
 import lombok.Getter;
 import lombok.Setter;

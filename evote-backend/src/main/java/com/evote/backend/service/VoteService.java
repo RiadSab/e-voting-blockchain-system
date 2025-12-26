@@ -7,12 +7,15 @@ import com.evote.backend.contract.Election;
 import com.evote.backend.dto.SubmitVoteRequest;
 import com.evote.backend.dto.SubmitVoteResponse;
 import com.evote.backend.dto.VoteStatus;
-import com.evote.backend.entitiy.records.TxResult;
+import com.evote.backend.entity.txUtilities.TxResult;
+import com.evote.backend.exception.blockchainExceptions.BlockchainTxException;
+import com.evote.backend.exception.businessExceptions.VoteAlreadyExistsException;
 import com.evote.backend.factory.ContractLoader;
 import com.evote.backend.repository.ElectionRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
@@ -67,9 +70,24 @@ public class VoteService {
                 merkleTreeDepth, merkleTreeRoot, nullifier, message, scope, points
         );
 
-        TxResult txResult = txService.sendAndWait("submitVote",
-                () -> electionContract.submitVote(c1x, c1y, c2x, c2y, semaphoreProof)
-        );
+        TxResult txResult = null;
+        try {
+            txResult = txService.sendAndWait("submitVote",
+                    () -> electionContract.submitVote(c1x, c1y, c2x, c2y, semaphoreProof)
+            );
+        } catch (BlockchainTxException e) {
+            if(e.getRevertReason() != null &&
+                    e.getRevertReason().contains("already voted")) {
+                throw new VoteAlreadyExistsException(
+                        "Vote already exists for election " + electionId,
+                        electionId.toString(),
+                        MDC.get("correlationId"),
+                        txResult.txHash()
+                );
+            } else {
+                throw e;
+            }
+        }
 
         log.info("Vote submitted in tx {}", txResult.txHash());
 

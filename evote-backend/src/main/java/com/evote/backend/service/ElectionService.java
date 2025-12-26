@@ -4,12 +4,13 @@ import static com.evote.backend.mapper.VoteParamMapper.toBigInt;
 import com.evote.backend.contract.Election;
 import com.evote.backend.contract.Semaphore;
 import com.evote.backend.dto.*;
-import com.evote.backend.entitiy.records.TxResult;
-import com.evote.backend.exception.BlockchainTxException;
-import com.evote.backend.exception.VoterAlreadyRegisteredException;
+import com.evote.backend.entity.txUtilities.TxResult;
+import com.evote.backend.exception.blockchainExceptions.BlockchainTxException;
+import com.evote.backend.exception.businessExceptions.VoterAlreadyRegisteredException;
 import com.evote.backend.factory.ContractLoader;
 import com.evote.backend.repository.ElectionRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
@@ -80,10 +81,10 @@ public class ElectionService {
             String revertReason = e.getRevertReason() == null ? "" : e.getRevertReason().toLowerCase();
             if(revertReason.contains("already registered")) {
                 throw new VoterAlreadyRegisteredException(
-                        electionId,
+                        electionId.toString(),
                         identityCommitmentBigInt,
                         e.getTxHash(),
-                        e.getCorrelationId(),
+                        e.getCorrelationId() != null ? e.getCorrelationId() : MDC.get("correlationId"),
                         e
                 );
             }

@@ -1,7 +1,7 @@
-package com.evote.backend.entitiy;
+package com.evote.backend.entity;
 
 import com.evote.backend.dto.ElectionStatus;
-import com.evote.backend.entitiy.shared.BaseEntityUuid;
+import com.evote.backend.entity.shared.BaseEntityUuid;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Data;

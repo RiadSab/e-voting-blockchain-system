@@ -1,4 +1,4 @@
-package com.evote.backend.entitiy.records;
+package com.evote.backend.entity.txUtilities;
 
 import java.time.Duration;
 
