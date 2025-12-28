@@ -20,7 +20,7 @@ import java.math.BigInteger;
 
 @Configuration
 public class Web3jConfig {
-    @Value("${WEB3J_CLIENT_ADDRESS}")
+    @Value("${web3j.client-address}")
     private String rpcUrl;
 
 
@@ -66,7 +66,7 @@ public class Web3jConfig {
 //    }
 
     @Bean
-    public TransactionManager transactionManager(Web3j web3j, Credentials credentials, BigInteger chainId) {
+    public TransactionManager web3jTransactionManager(Web3j web3j, Credentials credentials, BigInteger chainId) {
         // We use a PollingTransactionReceiptProcessor to wait for the receipt
         TransactionReceiptProcessor receiptProcessor = new PollingTransactionReceiptProcessor(web3j, 1000, 40);
 

@@ -9,5 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface ElectionRepository extends JpaRepository<ElectionEntity, UUID> {
-    Optional<String> findAddressById(UUID id);
+    Optional<String> findContractAddressById(UUID id);
 }

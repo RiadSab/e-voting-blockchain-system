@@ -1,0 +1,41 @@
+spring:
+  main:
+    web-application-type: servlet
+  application:
+    name: evote-backend
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 10
+        order_inserts: true
+        order_updates: true
+        generate_statistics: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  datasource:
+    url: jdbc:postgresql://localhost:5432/evote
+    username: evote
+    password: evote123
+    driver-class-name: org.postgresql.Driver
+
+logging:
+  level:
+    root: INFO
+    org.springframework.data.jpa: DEBUG
+    org.hibernate.sql: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+    org.springframework.jdbc.datasource: DEBUG
+    org.springframework.boot: DEBUG
+web3j:
+  client-address: http://localhost:8545
+
+contract:
+  deployment-info-path: ${user.home}/e-voting-blockchain-system/evote-foundry/deployments/deployments.json
+
+
+GAS_LIMIT: 15000000
+GAS_PRICE_GWEI: 20
+
+PRIVATE_KEY: ${PRIVATE_KEY}

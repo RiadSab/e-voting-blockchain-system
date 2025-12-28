@@ -36,7 +36,7 @@ public class VoteService {
 
     public SubmitVoteResponse submitVote(SubmitVoteRequest req, UUID electionId){
 
-        String electionContractAddress = electionRepo.findAddressById(electionId)
+        String electionContractAddress = electionRepo.findContractAddressById(electionId)
                 .orElseThrow(() -> new IllegalArgumentException("Election not found"));
 
 

@@ -11,6 +11,7 @@ import com.evote.backend.factory.ContractLoader;
 import com.evote.backend.repository.ElectionRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
@@ -23,12 +24,14 @@ public class ElectionService {
     private final BlockchainViewService viewService;
     private final BlockchainTransactionService txService;
     private final ContractLoader contractLoader;
+
+    @Autowired
     private final ElectionRepository electionRepo;
 
 
     public SemaphoreInputsDto getSemaphoreInputs(UUID electionId)  {
 
-        String electionAddress = electionRepo.findAddressById(electionId)
+        String electionAddress = electionRepo.findContractAddressById(electionId)
                 .orElseThrow(() -> new IllegalArgumentException("Election not found"));
 
         Election election = contractLoader.loadElectionContract(electionAddress);
@@ -57,7 +60,7 @@ public class ElectionService {
 
     public VoterRegistrationResponse registerVoter(UUID electionId, VoterRegistrationRequest request) {
         String identityCommitment = request.getIdentityCommitment();
-        String electionContractAddress = electionRepo.findAddressById(electionId)
+        String electionContractAddress = electionRepo.findContractAddressById(electionId)
                 .orElseThrow(() -> new IllegalArgumentException("Election not found: " + electionId));
 
         Election electionContract = contractLoader.loadElectionContract(electionContractAddress);
