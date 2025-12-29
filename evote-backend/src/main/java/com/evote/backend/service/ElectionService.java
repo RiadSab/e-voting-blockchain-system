@@ -25,7 +25,7 @@ public class ElectionService {
     private final BlockchainTransactionService txService;
     private final ContractLoader contractLoader;
 
-    @Autowired
+
     private final ElectionRepository electionRepo;
 
 
