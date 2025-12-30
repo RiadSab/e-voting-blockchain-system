@@ -7,6 +7,8 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.util.List;
+
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -26,5 +28,5 @@ public class ElectionEntity extends BaseEntityUuid {
     private ElectionStatus status;
     private boolean closed;
     private boolean tallyPublished;
-
+    List<Candidate> candidates;
 }

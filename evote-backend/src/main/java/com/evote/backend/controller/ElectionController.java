@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 
@@ -39,5 +40,24 @@ public class ElectionController {
             @Valid @RequestBody VoterRegistrationRequest registrationRequest
             ) {
         return ResponseEntity.status(201).body(electionService.registerVoter(electionId, registrationRequest));
+    }
+
+    @GetMapping("/open")
+    public ResponseEntity<List<ElectionSummaryDto>> getOpenElections() {
+        return ResponseEntity.ok(electionService.getOpenElections());
+    }
+
+    @GetMapping("/{electionId}")
+    public ResponseEntity<ElectionDetailsDto> getElectionDetails(@PathVariable UUID electionId) {
+        return ResponseEntity.ok(electionService.getElectionDetails(electionId));
+    }
+
+
+    @PostMapping("/{electionId}/candidates")
+    public ResponseEntity<UUID> registerCandidate(
+            @PathVariable UUID electionId,
+            @Valid @RequestBody RegisterCandidate request
+    ) {
+        return ResponseEntity.status(201).body(electionService.registerCandidate(electionId, request));
     }
 }

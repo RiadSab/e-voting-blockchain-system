@@ -1,8 +1,9 @@
 package com.evote.backend.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
-@Data
+@Data @AllArgsConstructor
 public class ElectionCreateResponse {
     private String electionId;
     private String message;
