@@ -1,9 +1,16 @@
 package com.evote.backend.service;
 
+import com.evote.backend.config.web3Config.DeploymentsConfig;
 import com.evote.backend.contract.Election;
 import com.evote.backend.contract.ElectionFactory;
 import com.evote.backend.contract.Semaphore;
-import com.evote.backend.dto.*;
+import com.evote.backend.dto.electionDto.*;
+import com.evote.backend.dto.enums.ElectionStatus;
+import com.evote.backend.dto.enums.RegistrationStatus;
+import com.evote.backend.dto.merkleServiceDto.CreateSnapshotRequestDto;
+import com.evote.backend.dto.clientSemaphoreDto.SemaphoreInputsDto;
+import com.evote.backend.dto.votingDto.VoterRegistrationRequest;
+import com.evote.backend.dto.votingDto.VoterRegistrationResponse;
 import com.evote.backend.entity.Candidate;
 import com.evote.backend.entity.ElectionEntity;
 import com.evote.backend.entity.txUtilities.TxResult;
@@ -31,6 +38,7 @@ public class ElectionService {
     private final BlockchainViewService viewService;
     private final BlockchainTransactionService txService;
     private final ContractLoader contractLoader;
+    private final DeploymentsConfig deploymentsConfig;
 
 
     private final ElectionRepository electionRepo;
@@ -56,20 +64,23 @@ public class ElectionService {
         String merkleTreeRoot = viewService.callView("getMerkleTreeRoot", () ->
                 semaphore.getMerkleTreeRoot(new BigInteger(groupId))).toString();
 
-
         return new SemaphoreInputsDto(
                 semaphoreAddress,
                 groupId,
                 merkleTreeDepth,
-                merkleTreeRoot
+                merkleTreeRoot, null, null, null // siblings, pathIndices, leafIndex to be filled by Merkle service
         );
     }
 
 
     public VoterRegistrationResponse registerVoter(UUID electionId, VoterRegistrationRequest request) {
         String identityCommitment = request.getIdentityCommitment();
-        String electionContractAddress = electionRepo.findContractAddressById(electionId)
+
+        ElectionEntity electionEntity = electionRepo.findById(electionId)
                 .orElseThrow(() -> new IllegalArgumentException("Election not found: " + electionId));
+        String electionContractAddress = electionEntity.getContractAddress();
+
+
 
         Election electionContract = contractLoader.loadElectionContract(electionContractAddress);
 
@@ -81,6 +92,16 @@ public class ElectionService {
                     "registerVoter",
                     () -> electionContract.registerVoter(identityCommitmentBigInt)
             );
+
+            // Update election entity with registration block numbers
+
+            Boolean firstBlockFetched = electionEntity.isFirstBlockFetched();
+            if(!firstBlockFetched){
+                electionEntity.setFirstRegistrationBlockNumber(txResult.receipt().getBlockNumber().toString());
+                electionEntity.setFirstBlockFetched(true);
+            }
+            electionEntity.setLastRegistrationBlockNumber(txResult.receipt().getBlockNumber().toString());
+            electionRepo.save(electionEntity);
             return new VoterRegistrationResponse(
                     RegistrationStatus.SUCCESS,
                     "Voter registered successfully",
@@ -210,5 +231,35 @@ public class ElectionService {
 
         candidateRepository.save(candidate);
         return candidate.getId();
+    }
+
+    public CreateSnapshotRequestDto closeElection(UUID electionId) {
+        Optional<ElectionEntity> electionOpt = electionRepo.findById(electionId);
+        if (electionOpt.isEmpty()) {
+            throw new IllegalArgumentException("Election not found: " + electionId);
+        }
+        ElectionEntity electionEntity = electionOpt.get();
+        String electionContractAddress = electionEntity.getContractAddress();
+        Election electionContract = contractLoader.loadElectionContract(electionContractAddress);
+
+        txService.sendAndWait(
+                "closeElection",
+                () -> electionContract.closeElection()
+        );
+
+        electionEntity.setClosed(true);
+        electionEntity.setStatus(ElectionStatus.COMPLETED);
+        electionRepo.save(electionEntity);
+
+
+        // provide snapshot dto object for the controller to Call merkle service for loading the merkle tree for this election
+
+        return  new CreateSnapshotRequestDto(
+                deploymentsConfig.deploymentsInfo().getSemaphoreAddress(),
+                electionEntity.getSemaphoreGroupId().toString(),
+                "10",
+                electionEntity.getFirstRegistrationBlockNumber(),
+                electionEntity.getLastRegistrationBlockNumber()
+        );
     }
 }

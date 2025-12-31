@@ -1,5 +1,6 @@
-package com.evote.backend.dto;
+package com.evote.backend.dto.electionDto;
 
+import com.evote.backend.dto.enums.ElectionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

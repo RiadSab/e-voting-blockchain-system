@@ -1,7 +1,7 @@
 package com.evote.backend.mapper;
 
-import com.evote.backend.dto.ElectionCreateRequest;
-import com.evote.backend.dto.ElectionStatus;
+import com.evote.backend.dto.electionDto.ElectionCreateRequest;
+import com.evote.backend.dto.enums.ElectionStatus;
 import com.evote.backend.entity.ElectionEntity;
 
 import java.math.BigInteger;

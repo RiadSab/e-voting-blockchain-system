@@ -1,4 +1,4 @@
-package com.evote.backend.dto;
+package com.evote.backend.dto.clientSemaphoreDto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -6,6 +6,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+
+// DTO representing a Semaphore proof, sent by the client when submitting a vote
+// Used inside SubmitVoteRequest to split responsibilities
+
 
 @Data
 @AllArgsConstructor @NoArgsConstructor

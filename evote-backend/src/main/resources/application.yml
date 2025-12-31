@@ -36,6 +36,9 @@ logging:
 web3j:
   client-address: http://localhost:8545
 
+meerkle-service:
+    url: http://localhost:4000
+
 contract:
   deployment-info-path: ${user.home}/e-voting-blockchain-system/evote-foundry/deployments/deployments.json
 

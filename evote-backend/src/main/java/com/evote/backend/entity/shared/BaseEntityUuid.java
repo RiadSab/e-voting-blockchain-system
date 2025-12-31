@@ -11,7 +11,7 @@ import java.util.UUID;
 @EqualsAndHashCode(callSuper = true)
 @MappedSuperclass
 @Data
-public class BaseEntityUuid extends Auditable {
+public abstract class BaseEntityUuid extends Auditable {
     @Id
     @Column(nullable = false, updatable = false)
     private UUID id = UUID.randomUUID();

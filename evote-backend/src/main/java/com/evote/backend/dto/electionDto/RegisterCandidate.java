@@ -1,7 +1,6 @@
-package com.evote.backend.dto;
+package com.evote.backend.dto.electionDto;
 
 import lombok.Getter;
-import lombok.Setter;
 
 
 @Getter

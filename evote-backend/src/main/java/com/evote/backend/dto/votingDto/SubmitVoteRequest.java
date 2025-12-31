@@ -1,5 +1,7 @@
-package com.evote.backend.dto;
+package com.evote.backend.dto.votingDto;
 
+import com.evote.backend.dto.clientSemaphoreDto.SemaphoreProofDto;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -18,5 +20,6 @@ public class SubmitVoteRequest {
     @NotBlank private String c2y;
 
     @NotNull
+    @Valid
     private SemaphoreProofDto semaphoreProof;
 }

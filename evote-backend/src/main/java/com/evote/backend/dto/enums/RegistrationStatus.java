@@ -1,4 +1,4 @@
-package com.evote.backend.dto;
+package com.evote.backend.dto.enums;
 
 public enum RegistrationStatus {
     SUCCESS,

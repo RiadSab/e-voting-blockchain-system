@@ -1,12 +1,11 @@
 package com.evote.backend.controller;
 
-import com.evote.backend.dto.ElectionCreateRequest;
-import com.evote.backend.dto.ElectionCreateResponse;
+import com.evote.backend.dto.electionDto.ElectionCreateRequest;
+import com.evote.backend.dto.electionDto.ElectionCreateResponse;
 import com.evote.backend.service.ElectionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;

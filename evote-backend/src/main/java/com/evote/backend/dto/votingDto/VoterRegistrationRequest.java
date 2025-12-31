@@ -1,4 +1,4 @@
-package com.evote.backend.dto;
+package com.evote.backend.dto.votingDto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

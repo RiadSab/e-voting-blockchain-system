@@ -1,11 +1,20 @@
 package com.evote.backend.controller;
 
-import com.evote.backend.dto.*;
+import com.evote.backend.dto.electionDto.ElectionDetailsDto;
+import com.evote.backend.dto.electionDto.ElectionSummaryDto;
+import com.evote.backend.dto.electionDto.RegisterCandidate;
+import com.evote.backend.dto.merkleServiceDto.CreateSnapshotResponseDto;
+import com.evote.backend.dto.merkleServiceDto.CreateSnapshotRequestDto;
+import com.evote.backend.dto.merkleServiceDto.MerkleProofDto;
+import com.evote.backend.dto.clientSemaphoreDto.SemaphoreInputsDto;
+import com.evote.backend.dto.votingDto.*;
 import com.evote.backend.service.ElectionService;
+import com.evote.backend.service.MerkleClientService;
 import com.evote.backend.service.VoteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,11 +27,22 @@ import java.util.UUID;
 public class ElectionController {
     private final ElectionService electionService;
     private final VoteService voteService;
+    private final MerkleClientService merkleClientService;
 
-    @GetMapping("/{electionId}/semaphore-inputs")
-    public ResponseEntity<SemaphoreInputsDto> getSemaphoreInputs(@PathVariable UUID electionId) {
-        return ResponseEntity.ok(electionService.getSemaphoreInputs(electionId));
+    // identityCommitment generated on client side using semaphore library from the seed provided by the user
+    @PostMapping("/{electionId}/semaphore-inputs")
+    public ResponseEntity<SemaphoreInputsDto> getSemaphoreInputs(@PathVariable UUID electionId, @RequestParam String identityCommitment) {
+
+        SemaphoreInputsDto inputsDto = electionService.getSemaphoreInputs(electionId);
+        MerkleProofDto merkleProofDto = merkleClientService.getMerkleProof(inputsDto.getSemaphoreAddress(), inputsDto.getGroupId(),identityCommitment);
+
+        inputsDto.setSiblings(merkleProofDto.getSiblings());
+        inputsDto.setPathIndices(merkleProofDto.getPathIndices());
+        inputsDto.setLeafIndex(merkleProofDto.getLeafIndex());
+
+        return ResponseEntity.ok(inputsDto);
     }
+
 
     @PostMapping("/{electionId}/votes")
     public ResponseEntity<SubmitVoteResponse> submitVote(
@@ -57,7 +77,20 @@ public class ElectionController {
     public ResponseEntity<UUID> registerCandidate(
             @PathVariable UUID electionId,
             @Valid @RequestBody RegisterCandidate request
-    ) {
+    )
+    {
         return ResponseEntity.status(201).body(electionService.registerCandidate(electionId, request));
     }
+
+    // close election, trigger snapshot creation on merkle service and return snapshot details
+    @PostMapping("/{electionId}/close")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CreateSnapshotResponseDto> closeElection(@PathVariable UUID electionId) {
+        CreateSnapshotRequestDto req = electionService.closeElection(electionId);
+        CreateSnapshotResponseDto res = merkleClientService.createSnapshot(req);
+
+        return ResponseEntity.ok(res);
+    }
+
+
 }

@@ -1,6 +1,6 @@
 package com.evote.backend.entity;
 
-import com.evote.backend.dto.ElectionStatus;
+import com.evote.backend.dto.enums.ElectionStatus;
 import com.evote.backend.entity.shared.BaseEntityUuid;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -29,4 +29,10 @@ public class ElectionEntity extends BaseEntityUuid {
     private boolean closed;
     private boolean tallyPublished;
     List<Candidate> candidates;
+
+    private boolean firstBlockFetched;
+    private String firstRegistrationBlockNumber;
+    private String lastRegistrationBlockNumber;
+    private String rootHash;
+    private Long totalVoterCount;
 }

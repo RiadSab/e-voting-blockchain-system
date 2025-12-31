@@ -1,6 +1,6 @@
 package com.evote.backend.entity;
 
-import com.evote.backend.dto.VoteStatus;
+import com.evote.backend.dto.enums.VoteStatus;
 import com.evote.backend.entity.shared.BaseEntitySeq;
 import jakarta.persistence.*;
 import lombok.Data;
