@@ -15,6 +15,28 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    networks:
+      - evote-net
+
+
+
+  merkle-service:
+    build: ./home/riad/e-voting-blockchain-system/merkle-service
+    container_name: merkle-service
+    environment:
+      - CHAIN_ID=31337
+      - PORT=4000
+      - RPC_URL=http://host.docker.internal/8545
+      - DATABA_URL=postgresql://evote:evote123@app-db:5432/evote
+    ports:
+      - "4000:4000"
+    depends_on:
+      app-db:
+        condition: service_healthy
+    networks:
+      - evote-net
+
+
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak
@@ -37,6 +59,10 @@ services:
     volumes:
       - ./themes:/opt/keycloak/themes
       - ./providers:/opt/keycloak/providers
+    networks:
+      - evote-net
+
+
   keycloak-db:
     image: postgres:16
     container_name: keycloak-db
@@ -53,6 +79,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    networks:
+      - evote-net
+
 volumes:
   app_db_data:
   keycloak_db_data: 
