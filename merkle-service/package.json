@@ -1,0 +1,30 @@
+{
+  "name": "merkle-service",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "node dist/service.js", 
+    "dev": "ts-node service.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@semaphore-protocol/group": "^4.14.0",
+    "ethers": "^6.16.0",
+    "express": "^5.2.1",
+    "pg": "^8.16.3",
+    "viem": "^2.43.4",
+    "zod": "^4.3.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.3",
+    "@types/pg": "^8.16.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3"
+  }
+}
