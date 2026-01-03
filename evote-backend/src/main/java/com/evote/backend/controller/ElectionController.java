@@ -30,7 +30,7 @@ public class ElectionController {
     private final MerkleClientService merkleClientService;
 
     // identityCommitment generated on client side using semaphore library from the seed provided by the user
-    @PostMapping("/{electionId}/semaphore-inputs")
+    @GetMapping("/{electionId}/semaphore-inputs")
     public ResponseEntity<SemaphoreInputsDto> getSemaphoreInputs(@PathVariable UUID electionId, @RequestParam String identityCommitment) {
 
         SemaphoreInputsDto inputsDto = electionService.getSemaphoreInputs(electionId);
@@ -92,5 +92,14 @@ public class ElectionController {
         return ResponseEntity.ok(res);
     }
 
+    @PostMapping("/{electionId}/close-registration")
+    public ResponseEntity<?> closeRegistration(@PathVariable UUID electionId) {
+        electionService.closeRegistration(electionId);
+        return ResponseEntity.ok().build();
+    }
 
+    @GetMapping("/all")
+    public ResponseEntity<List<ElectionSummaryDto>> getAllElections() {
+        return ResponseEntity.ok(electionService.getAllElections());
+    }
 }

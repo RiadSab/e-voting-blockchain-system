@@ -11,6 +11,6 @@ public class ElectionCreateResponse {
     private ElectionStatus status;
     private String transactionHash;
     private String electionAddress;
-    private Long createdAt;
-    private Long blockNumber;
+    private String createdAt;
+    private String blockNumber;
 }

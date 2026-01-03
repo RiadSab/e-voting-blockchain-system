@@ -2,7 +2,10 @@ package com.evote.backend.dto.enums;
 
 public enum ElectionStatus {
     UPCOMING,
+    REGISTRATION,
     ONGOING,
     COMPLETED,
-    CANCELLED
+    CANCELLED,
+    CLOSED,
+    REGISTRATION_COMPLETED
 }

@@ -12,6 +12,6 @@ public class SubmitVoteResponse {
     private String transactionHash;
     private VoteStatus status;
     private Long timestamp;
-    private BigInteger blockNumber;
+    private String blockNumber;
     private String message;
 }

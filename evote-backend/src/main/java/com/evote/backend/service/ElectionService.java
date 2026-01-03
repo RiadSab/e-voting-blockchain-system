@@ -172,8 +172,8 @@ public class ElectionService {
                 ElectionStatus.UPCOMING,
                 txResult.txHash(),
                 electionAddress,
-                entity.getCreatedAt().getEpochSecond(),
-                txResult.receipt().getBlockNumber().longValue()
+                Long.toString(entity.getCreatedAt().getEpochSecond()),
+                txResult.receipt().getBlockNumber().toString()
         );
     }
 
@@ -261,5 +261,36 @@ public class ElectionService {
                 electionEntity.getFirstRegistrationBlockNumber(),
                 electionEntity.getLastRegistrationBlockNumber()
         );
+    }
+
+    public void closeRegistration(UUID electionId) {
+        Optional<ElectionEntity> electionOpt = electionRepo.findById(electionId);
+        if (electionOpt.isEmpty()) {
+            throw new IllegalArgumentException("Election not found: " + electionId);
+        }
+        ElectionEntity electionEntity = electionOpt.get();
+
+        //TODO add registration closing method in Election contract and call it here
+
+
+        electionEntity.setStatus(ElectionStatus.REGISTRATION_COMPLETED);
+        electionRepo.save(electionEntity);
+    }
+
+    public List<ElectionSummaryDto> getAllElections() {
+        List<ElectionEntity> elections = electionRepo.findAllByOrderByCreatedAtDesc();
+        return elections.stream()
+                .map(e -> new ElectionSummaryDto(
+                        e.getId().toString(),
+                        e.getElectionName(),
+                        e.getContractAddress(),
+                        e.getMetadataCid(),
+                        e.getStartTime(),
+                        e.getEndTime(),
+                        e.getStatus(),
+                        e.isClosed(),
+                        e.isTallyPublished()
+                ))
+                .toList();
     }
 }

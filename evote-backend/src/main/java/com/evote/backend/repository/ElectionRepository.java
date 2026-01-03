@@ -13,4 +13,6 @@ public interface ElectionRepository extends JpaRepository<ElectionEntity, UUID> 
     Optional<String> findContractAddressById(UUID id);
 
     List<ElectionEntity> findByClosedFalseOrderByCreatedAtDesc();
+
+    List<ElectionEntity> findAllByOrderByCreatedAtDesc();
 }

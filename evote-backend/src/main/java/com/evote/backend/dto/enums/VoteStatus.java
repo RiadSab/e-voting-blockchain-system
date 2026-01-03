@@ -1,7 +1,7 @@
 package com.evote.backend.dto.enums;
 
 public enum VoteStatus {
-    SUCCESS,
-    FAILURE,
+    ACCEPTED,
+    REJECTED,
     PENDING
 }

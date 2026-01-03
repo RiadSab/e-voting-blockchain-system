@@ -93,9 +93,9 @@ public class VoteService {
 
         return new SubmitVoteResponse(
                 txResult.txHash(),
-                VoteStatus.SUCCESS,
+                VoteStatus.ACCEPTED,
                 Instant.now().getEpochSecond(),
-                txResult.receipt().getBlockNumber(),
+                txResult.receipt().getBlockNumber().toString(),
                 "Vote submitted successfully"
         );
     }

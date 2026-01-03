@@ -32,7 +32,6 @@ public class ElectionCreateRequest {
 
     private String tallyVerifier; // we can use the authority as default tally verifier
 
-    private List
     // Semaphore address: passed by the Factory
     // Semaphore groupId: created internally by Factory using Semaphore interface
 }
