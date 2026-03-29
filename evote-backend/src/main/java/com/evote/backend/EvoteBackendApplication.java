@@ -1,9 +1,8 @@
 package com.evote.backend;
 
-import com.evote.backend.config.springConfig.DotenvInitializer;
+import com.evote.backend.config.bootstrap.DotenvInitializer;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 
 // @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
 @SpringBootApplication

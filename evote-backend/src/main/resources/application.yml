@@ -23,7 +23,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8082/realms/evote
+          issuer-uri: http://localhost:8082/realms/e-vote-app
 
 logging:
   level:

@@ -1,0 +1,103 @@
+package com.evote.backend.vote.service;
+
+
+import static com.evote.backend.vote.mapper.VoteParamMapper.toBigInt;
+import static com.evote.backend.vote.mapper.VoteParamMapper.toBigIntList;
+import com.evote.backend.blockchain.contract.Election;
+import com.evote.backend.vote.dto.SubmitVoteRequest;
+import com.evote.backend.vote.dto.SubmitVoteResponse;
+import com.evote.backend.shared.enums.VoteStatus;
+import com.evote.backend.blockchain.tx.TxResult;
+import com.evote.backend.blockchain.exception.BlockchainTxException;
+import com.evote.backend.vote.exception.VoteAlreadyExistsException;
+import com.evote.backend.blockchain.factory.ContractLoader;
+import com.evote.backend.election.repository.ElectionRepository;
+import com.evote.backend.blockchain.service.BlockchainTransactionService;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+import org.springframework.stereotype.Service;
+
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+
+@Service
+@RequiredArgsConstructor
+public class VoteService {
+
+    private final BlockchainTransactionService txService;
+    private final ContractLoader contractLoader;
+    private final ElectionRepository electionRepo;
+
+    Logger log = LoggerFactory.getLogger(VoteService.class);
+
+    public SubmitVoteResponse submitVote(SubmitVoteRequest req, UUID electionId){
+
+        String electionContractAddress = electionRepo.findContractAddressById(electionId)
+                .orElseThrow(() -> new IllegalArgumentException("Election not found"));
+
+
+        Election electionContract = contractLoader.loadElectionContract(electionContractAddress);
+
+        BigInteger c1x = toBigInt(req.getC1x(), "c1x");
+        BigInteger c1y = toBigInt(req.getC1y(), "c1y");
+        BigInteger c2x = toBigInt(req.getC2x(), "c2x");
+        BigInteger c2y = toBigInt(req.getC2y(), "c2y");
+
+        // SemaphoreProof signature:
+        // SemaphoreProof(BigInteger merkleTreeDepth, BigInteger merkleTreeRoot,
+        //                BigInteger nullifier, BigInteger message, BigInteger scope,
+        //                List<BigInteger> points)
+
+        var reqProof = req.getSemaphoreProof();
+
+        BigInteger merkleTreeDepth = toBigInt(reqProof.getMerkleTreeDepth(), "merkleTreeDepth");
+        BigInteger merkleTreeRoot = toBigInt(reqProof.getMerkleRoot(), "merkleTreeRoot");
+        BigInteger nullifier = toBigInt(reqProof.getNullifier(), "nullifier");
+        BigInteger message = toBigInt(reqProof.getMessage(), "message");
+        BigInteger scope = toBigInt(reqProof.getScope(), "scope");
+
+        List<BigInteger> points = toBigIntList(reqProof.getProof(), "proof");
+
+        if (points.size() != 8) {
+            throw new IllegalArgumentException("proof must have exactly 8 elements, got " + points.size());
+        }
+
+        Election.SemaphoreProof semaphoreProof = new Election.SemaphoreProof(
+                merkleTreeDepth, merkleTreeRoot, nullifier, message, scope, points
+        );
+
+        TxResult txResult = null;
+        try {
+            txResult = txService.sendAndWait("submitVote",
+                    () -> electionContract.submitVote(c1x, c1y, c2x, c2y, semaphoreProof)
+            );
+        } catch (BlockchainTxException e) {
+            if(e.getRevertReason() != null &&
+                    e.getRevertReason().contains("already voted")) {
+                throw new VoteAlreadyExistsException(
+                        "Vote already exists for election " + electionId,
+                        electionId.toString(),
+                        MDC.get("correlationId"),
+                        txResult.txHash()
+                );
+            } else {
+                throw e;
+            }
+        }
+
+        log.info("Vote submitted in tx {}", txResult.txHash());
+
+        return new SubmitVoteResponse(
+                txResult.txHash(),
+                VoteStatus.ACCEPTED,
+                Instant.now().getEpochSecond(),
+                txResult.receipt().getBlockNumber().toString(),
+                "Vote submitted successfully"
+        );
+    }
+}

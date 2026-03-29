@@ -1,8 +1,8 @@
 package com.evote.backend.controller;
 
-import com.evote.backend.dto.electionDto.ElectionCreateRequest;
-import com.evote.backend.dto.electionDto.ElectionCreateResponse;
-import com.evote.backend.service.ElectionService;
+import com.evote.backend.election.dto.ElectionCreateRequest;
+import com.evote.backend.election.dto.ElectionCreateResponse;
+import com.evote.backend.election.service.ElectionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +20,4 @@ public class AdminController {
         ElectionCreateResponse response = electionService.createElection(request);
         return ResponseEntity.status(201).body(response);
     }
-
-
 }

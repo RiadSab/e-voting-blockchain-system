@@ -1,11 +1,11 @@
 package com.evote.backend.exception;
 
-import com.evote.backend.exception.blockchainExceptions.BlockchainException;
-import com.evote.backend.exception.blockchainExceptions.BlockchainReadException;
-import com.evote.backend.exception.blockchainExceptions.BlockchainTxException;
-import com.evote.backend.exception.businessExceptions.InvalidVoteException;
-import com.evote.backend.exception.businessExceptions.VoteAlreadyExistsException;
-import com.evote.backend.exception.businessExceptions.VoterAlreadyRegisteredException;
+import com.evote.backend.blockchain.exception.BlockchainException;
+import com.evote.backend.blockchain.exception.BlockchainReadException;
+import com.evote.backend.blockchain.exception.BlockchainTxException;
+import com.evote.backend.vote.exception.InvalidVoteException;
+import com.evote.backend.vote.exception.VoteAlreadyExistsException;
+import com.evote.backend.voter.exception.VoterAlreadyRegisteredException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
