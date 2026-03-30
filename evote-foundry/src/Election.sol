@@ -10,7 +10,7 @@ contract Election is ReentrancyGuard {
     event VoteSubmitted(uint256 c1x, uint256 c1y, uint256 c2x, uint256 c2y, uint256 timestamp);
     event ElectionClosed(uint256 indexed electionId, uint256 timestamp);
     event TallyPublished(uint256  electionId, uint256[] tallies, string proofCid);
-
+    event VoterRegistered(uint256 indexed identityCommitment, address addedBy);
 
     // forge-lint: disable-next-line(screaming-snake-case-immutable)
     uint256 public immutable electionId;
@@ -21,23 +21,20 @@ contract Election is ReentrancyGuard {
     uint256 public startTime;
     uint256 public endTime;
 
-    address public tallyVerifier;    // address allowed to publish final tally (or dedicated verifier that calls onTallyVerified)
-    address public electionAuthority; // multisig / safe address controlling admin operations
+    address public tallyVerifier;    // address allowed to publish final tally
+    address public electionAuthority; // later:multisig / safe address controlling admin operations
 
     // Semaphore integration
     address public semaphore;        // Semaphore core contract
     uint256 public semaphoreGroupId; // Group used for this election
 
-    // -------------------------
-    // Mutable state
-    // -------------------------
 
-    bool public closed; // admin closed voting early or after endTime
-    bool public tallyPublished; // once final tally is published, lock
+
+    bool public closed;
+    bool public tallyPublished;
 
     uint256[] public finalTally; // published results (per-candidate counts)
     string public tallyProofCid; // IPFS CID of proof bundle
-    bytes32 public tallyProofCidHash; // keccak256(bytes(tallyProofCid))
     uint256 public finalTallyPublished; // timestamp
 
 
@@ -94,11 +91,7 @@ contract Election is ReentrancyGuard {
 
 
     /**
-     * @notice Submit an encrypted vote using Semaphore proof for on-chain membership/nullifier enforcement.
-     * @param c1x Ciphertext C1.x.
-     * @param c1y Ciphertext C1.y.
-     * @param c2x Ciphertext C2.x.
-     * @param c2y Ciphertext C2.y.
+     * @notice votes are submitted in an encrypted form
      * @param semaProof Semaphore proof with fields:
      *        - merkleTreeDepth, merkleTreeRoot ,
      *        - nullifier (must be unused),
@@ -113,25 +106,27 @@ contract Election is ReentrancyGuard {
         uint256 c2y,
         ISemaphore.SemaphoreProof calldata semaProof
     ) external nonReentrant {
-        // --- cheap structural checks first ---
+
         require(block.timestamp >= startTime, "Election: not started");
         require(block.timestamp <= endTime, "Election: finished");
         require(!closed, "Election: closed");
-        require(!tallyPublished, "Election: tally already published");
 
-        // Build expected bindings for Semaphore: signal binds to ciphertext and election
-        // forge-lint: disable-next-line(asm-keccak256)
-        bytes32 expectedSignal = keccak256(abi.encode(electionId, c1x, c1y, c2x, c2y));
-        require(semaProof.message == uint256(expectedSignal), "Election: bad message");
+        bytes32 rawHash= keccak256(abi.encode(electionId, c1x, c1y, c2x, c2y));
+        uint256 expectedMessage = uint256(rawHash) >> 8; // truncate to 248 bits, because Semaphore use 248-bit field
+
+        require(semaProof.message == uint256(expectedMessage), "Election: bad message");
         require(semaProof.scope == electionId, "Election: bad scope");
 
-        // Verify via Semaphore
         ISemaphore(semaphore).validateProof(semaphoreGroupId, semaProof);
 
         // emit the ciphertext points, query it later from a node using the contract address and blocks timestamp
         emit VoteSubmitted(c1x, c1y, c2x, c2y, block.timestamp);
     }
 
+    function registerVoter(uint256 identityCommitment) external onlyAuthority {
+        ISemaphore(semaphore).addMember(semaphoreGroupId, identityCommitment);
+        emit VoterRegistered(identityCommitment, electionAuthority);
+    }
 
     function closeElection() external onlyAuthority {
         require(!closed, "Election: already closed");
@@ -145,19 +140,17 @@ contract Election is ReentrancyGuard {
     }
 
 
-    /// @notice Accept final tallies after the tally SNARK has been verified by the external tally verifier
+    /// @notice Later: Accept final tallies after the tally SNARK has been verified by the external tally verifier (for now I will use only a trusted later)
     /// @param tallies array of counts per candidate (order must match metadata)
-    /// @param proofCid IPFS CID pointing to the proof bundle (proof, publicSignals, logs)
     function onTallyVerified(uint256[] calldata tallies, string calldata proofCid) external onlyTallyVerifier {
         require(!tallyPublished, "Election: tally already published");
         require(closed || block.timestamp > endTime, "Election: cannot publish tally before close");
-
+        
         // store final tallies
         finalTally = tallies;
 
         // store proof cid and its hash
         tallyProofCid = proofCid;
-        tallyProofCidHash = keccak256(bytes(proofCid));
 
         tallyPublished = true;
         finalTallyPublished = block.timestamp;
