@@ -3,6 +3,7 @@ package com.evote.backend.zk.merkle.service;
 import com.evote.backend.zk.merkle.dto.CreateSnapshotResponseDto;
 import com.evote.backend.zk.merkle.dto.CreateSnapshotRequestDto;
 import com.evote.backend.zk.merkle.dto.MerkleProofDto;
+import com.evote.backend.zk.merkle.dto.MerkleProofRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -40,5 +41,4 @@ public class MerkleClientService {
                 .retrieve()
                 .body(MerkleProofDto.class);
     }
-    private record MerkleProofRequest(String semaphoreAddress, String groupId, String identityCommitment) {}
 }
