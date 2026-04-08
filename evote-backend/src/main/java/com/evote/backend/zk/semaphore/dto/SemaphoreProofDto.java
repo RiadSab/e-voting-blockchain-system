@@ -15,21 +15,19 @@ import java.util.List;
 @AllArgsConstructor @NoArgsConstructor
 public class SemaphoreProofDto {
     @NotBlank
-    private String message;
+    private String message; // vote payload
 
     private String merkleTreeDepth;
-
 
     @NotBlank
     private String nullifier;
 
+    @NotBlank
+    private String scope; // eleeeection id
 
     @NotBlank
-    private String scope;
+    private String merkleTreeRoot;
 
     @NotBlank
-    private String merkleRoot;
-
-    @NotBlank
-    private List<String> proof;
+    private List<String> points; // 8 points
 }
