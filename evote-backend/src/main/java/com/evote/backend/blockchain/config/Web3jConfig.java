@@ -37,7 +37,7 @@ public class Web3jConfig {
     }
 
     @Bean
-    public BigInteger chainId(Web3j web3j) {
+    public BigInteger rpcChainId(Web3j web3j) {
         try {
             return web3j.ethChainId().send().getChainId();
         } catch (IOException e) {
