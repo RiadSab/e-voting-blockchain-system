@@ -2,34 +2,52 @@ import { Pool } from "pg"
 import { Snapshot } from "./merkleDto"
 import { CONFIG } from "./config"
 
+
+const sleep = (ms: number) =>
+  new Promise(resolve => setTimeout(resolve, ms))
 export class SnapshotRepository {
   private pool: Pool
   constructor(pool: Pool) {
     this.pool = pool
   }
 
-  async initDB() {
+   async initDB(retries = 10) {
     const query = `
-            CREATE TABLE IF NOT EXISTS merkle_snapshots (
-                chain_id INT,
-                semaphore_address TEXT,
-                group_id TEXT,
-                depth INT,
-                snapshot_block INT,
-                root TEXT,
-                members TEXT[],
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (chain_id, semaphore_address, group_id)
-                );
-            `
-    try {
-      await this.pool.query(query)
-      console.log("Database table 'merkle_snapshots' verified.")
-    } catch (err) {
-      console.error("Database initialization failed:", err)
-      process.exit(1)
+      CREATE TABLE IF NOT EXISTS merkle_snapshots (
+        chain_id INT,
+        semaphore_address TEXT,
+        group_id TEXT,
+        depth INT,
+        snapshot_block INT,
+        root TEXT,
+        members TEXT[],
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (chain_id, semaphore_address, group_id)
+      );
+    `
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        await this.pool.query("SELECT 1") // quick ping first
+        await this.pool.query(query)
+
+        console.log("Database initialized successfully.")
+        return
+      } catch (err: any) {
+        console.error(
+          `DB init failed (attempt ${attempt}/${retries}):`,
+          err.message
+        )
+
+        if (attempt === retries) {
+          throw err
+        }
+
+        await sleep(2000)
+      }
     }
   }
+
 
   async loadSnapshot(semaphoreAddress: string, groupId: string): Promise<Snapshot | null> {
     const query = `
