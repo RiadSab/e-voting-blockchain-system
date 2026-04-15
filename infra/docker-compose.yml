@@ -21,13 +21,14 @@ services:
 
 
   merkle-service:
-    build: ./home/riad/e-voting-blockchain-system/merkle-service
+    build: ../merkle-service
     container_name: merkle-service
+    restart: always
     environment:
       - CHAIN_ID=31337
       - PORT=4000
       - RPC_URL=http://host.docker.internal/8545
-      - DATABA_URL=postgresql://evote:evote123@app-db:5432/evote
+      - DATABASE_URL=postgresql://evote:evote123@app-db:5432/evote
     ports:
       - "4000:4000"
     depends_on:
