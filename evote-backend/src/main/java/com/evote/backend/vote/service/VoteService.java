@@ -56,12 +56,12 @@ public class VoteService {
         var reqProof = req.getSemaphoreProof();
 
         BigInteger merkleTreeDepth = toBigInt(reqProof.getMerkleTreeDepth(), "merkleTreeDepth");
-        BigInteger merkleTreeRoot = toBigInt(reqProof.getMerkleRoot(), "merkleTreeRoot");
+        BigInteger merkleTreeRoot = toBigInt(reqProof.getMerkleTreeRoot(), "merkleTreeRoot");
         BigInteger nullifier = toBigInt(reqProof.getNullifier(), "nullifier");
         BigInteger message = toBigInt(reqProof.getMessage(), "message");
         BigInteger scope = toBigInt(reqProof.getScope(), "scope");
 
-        List<BigInteger> points = toBigIntList(reqProof.getProof(), "proof");
+        List<BigInteger> points = toBigIntList(reqProof.getPoints(), "proof");
 
         if (points.size() != 8) {
             throw new IllegalArgumentException("proof must have exactly 8 elements, got " + points.size());
