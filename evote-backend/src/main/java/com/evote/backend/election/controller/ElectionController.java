@@ -29,7 +29,6 @@ import java.util.UUID;
 @RequestMapping("/api/elections")
 public class ElectionController {
     private final ElectionService electionService;
-    private final VoteService voteService;
     private final MerkleClientService merkleClientService;
 
     // identityCommitment generated on client side using semaphore library from the seed provided by the user
@@ -47,23 +46,6 @@ public class ElectionController {
     }
 
 
-    @PostMapping("/{electionId}/votes")
-    public ResponseEntity<SubmitVoteResponse> submitVote(
-            @PathVariable UUID electionId,
-            @Valid @RequestBody SubmitVoteRequest voteRequest
-    ) {
-        return ResponseEntity.ok(voteService.submitVote(voteRequest, electionId));
-    }
-
-
-    //TODO : Store commitments in DB to prevent duplicates and gas fees
-    @PostMapping("/{electionId}/registration")
-    public ResponseEntity<VoterRegistrationResponse> registerVoter(
-            @PathVariable UUID electionId,
-            @Valid @RequestBody VoterRegistrationRequest registrationRequest
-            ) {
-        return ResponseEntity.status(201).body(electionService.registerVoter(electionId, registrationRequest));
-    }
 
     @GetMapping("/open")
     public ResponseEntity<List<ElectionSummaryDto>> getOpenElections() {

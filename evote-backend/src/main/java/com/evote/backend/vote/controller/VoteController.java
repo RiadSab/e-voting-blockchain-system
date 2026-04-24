@@ -4,7 +4,6 @@ import com.evote.backend.vote.dto.SubmitVoteRequest;
 import com.evote.backend.vote.dto.SubmitVoteResponse;
 import com.evote.backend.vote.service.VoteService;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
