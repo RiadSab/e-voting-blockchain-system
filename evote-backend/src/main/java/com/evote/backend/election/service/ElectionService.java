@@ -4,27 +4,23 @@ import com.evote.backend.blockchain.config.DeploymentsConfig;
 import com.evote.backend.blockchain.contract.ElectionFactory;
 import com.evote.backend.blockchain.contract.Semaphore;
 import com.evote.backend.shared.enums.ElectionStatus;
-import com.evote.backend.shared.enums.RegistrationStatus;
 import com.evote.backend.zk.merkle.dto.CreateSnapshotRequestDto;
 import com.evote.backend.zk.semaphore.dto.SemaphoreInputsDto;
-import com.evote.backend.voter.dto.VoterRegistrationRequest;
-import com.evote.backend.voter.dto.VoterRegistrationResponse;
 import com.evote.backend.election.dto.*;
 import com.evote.backend.candidate.entity.Candidate;
 import com.evote.backend.election.entity.Election;
 import com.evote.backend.blockchain.tx.TxResult;
-import com.evote.backend.blockchain.exception.BlockchainTxException;
-import com.evote.backend.voter.exception.VoterAlreadyRegisteredException;
 import com.evote.backend.blockchain.factory.ContractLoader;
 import static  com.evote.backend.shared.mapper.SharedMapper.toBigInt;
+import static com.evote.backend.election.mapper.ElectionMapper.toElectionDetailsDto;
 import static com.evote.backend.election.mapper.ElectionMapper.toElectionEntity;
+import static com.evote.backend.election.mapper.ElectionMapper.toElectionSummaryDto;
 
 import com.evote.backend.candidate.repository.CandidateRepository;
 import com.evote.backend.election.repository.ElectionRepository;
 import com.evote.backend.blockchain.service.BlockchainTransactionService;
 import com.evote.backend.blockchain.service.BlockchainViewService;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
@@ -72,60 +68,6 @@ public class ElectionService {
                 merkleTreeRoot, null, null, null // siblings, pathIndices, leafIndex to be filled by Merkle service
         );
     }
-
-
-    public VoterRegistrationResponse registerVoter(UUID electionId, VoterRegistrationRequest request) {
-        String identityCommitment = request.getIdentityCommitment();
-
-        Election electionEntity = electionRepo.findById(electionId)
-                .orElseThrow(() -> new IllegalArgumentException("Election not found: " + electionId));
-        String electionContractAddress = electionEntity.getContractAddress();
-
-
-
-        com.evote.backend.blockchain.contract.Election electionContract = contractLoader.loadElectionContract(electionContractAddress);
-
-        BigInteger identityCommitmentBigInt = toBigInt(identityCommitment, "identityCommitment");
-
-        TxResult txResult = null;
-        try {
-            txResult = txService.sendAndWait(
-                    "registerVoter",
-                    () -> electionContract.registerVoter(identityCommitmentBigInt)
-            );
-
-            // Update election entity with registration block numbers
-
-            Boolean firstBlockFetched = electionEntity.isFirstBlockFetched();
-            if(!firstBlockFetched){
-                electionEntity.setFirstRegistrationBlockNumber(txResult.receipt().getBlockNumber().toString());
-                electionEntity.setFirstBlockFetched(true);
-            }
-            electionEntity.setLastRegistrationBlockNumber(txResult.receipt().getBlockNumber().toString());
-            electionRepo.save(electionEntity);
-            return new VoterRegistrationResponse(
-                    RegistrationStatus.SUCCESS,
-                    "Voter registered successfully",
-                    txResult.txHash()
-            );
-
-        } catch (BlockchainTxException e) {
-
-            String revertReason = e.getRevertReason() == null ? "" : e.getRevertReason().toLowerCase();
-            if(revertReason.contains("already registered")) {
-                throw new VoterAlreadyRegisteredException(
-                        electionId.toString(),
-                        identityCommitmentBigInt,
-                        e.getTxHash(),
-                        e.getCorrelationId() != null ? e.getCorrelationId() : MDC.get("correlationId"),
-                        e
-                );
-            }
-            throw e;
-        }
-    }
-
-
 
 
     public ElectionCreateResponse createElection(ElectionCreateRequest request) {
@@ -181,17 +123,7 @@ public class ElectionService {
     public List<ElectionSummaryDto> getOpenElections() {
         List<Election> elections = electionRepo.findByClosedFalseOrderByCreatedAtDesc();
         return elections.stream()
-                .map(e -> new ElectionSummaryDto(
-                        e.getId().toString(),
-                        e.getElectionName(),
-                        e.getContractAddress(),
-                        e.getMetadataCid(),
-                        e.getStartTime(),
-                        e.getEndTime(),
-                        e.getStatus(),
-                        e.isClosed(),
-                        e.isTallyPublished()
-                ))
+                .map(e -> toElectionSummaryDto(e))
                 .toList();
     }
 
@@ -201,19 +133,7 @@ public class ElectionService {
             throw new IllegalArgumentException("Election not found: " + electionId);
         }
         Election election = electionOpt.get();
-        return new ElectionDetailsDto(
-                election.getId().toString(),
-                election.getElectionName(),
-                election.getContractAddress(),
-                election.getMetadataCid(),
-                election.getMetadataHash(),
-                election.getStartTime(),
-                election.getEndTime(),
-                election.getStatus(),
-                election.getSemaphoreGroupId().toString(),
-                election.isTallyPublished(),
-                election.getCandidates()
-        );
+        return toElectionDetailsDto(election);
     }
 
     //TODO: DECIDE WHAT TO RETURN EXACTLY later
@@ -281,17 +201,7 @@ public class ElectionService {
     public List<ElectionSummaryDto> getAllElections() {
         List<Election> elections = electionRepo.findAllByOrderByCreatedAtDesc();
         return elections.stream()
-                .map(e -> new ElectionSummaryDto(
-                        e.getId().toString(),
-                        e.getElectionName(),
-                        e.getContractAddress(),
-                        e.getMetadataCid(),
-                        e.getStartTime(),
-                        e.getEndTime(),
-                        e.getStatus(),
-                        e.isClosed(),
-                        e.isTallyPublished()
-                ))
+                .map(e -> toElectionSummaryDto(e))
                 .toList();
     }
 }
