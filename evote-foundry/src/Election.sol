@@ -7,10 +7,10 @@ import {ISemaphore} from "@semaphore/contracts/interfaces/ISemaphore.sol";
 contract Election is ReentrancyGuard {
     // Events
     event VoteSubmitted(
-        uint256 c1x,
-        uint256 c1y,
-        uint256 c2x,
-        uint256 c2y,
+        uint256[] c1x,
+        uint256[] c1y,
+        uint256[] c2x,
+        uint256[] c2y,
         uint256 timestamp
     );
     event ElectionClosed(uint256 indexed electionId, uint256 timestamp);
@@ -31,17 +31,17 @@ contract Election is ReentrancyGuard {
     bytes32 public immutable metadataHash; // sha256(canonical_metadata_json), matches IPFS CID multihash
     uint256 public immutable publicKeyX;
     uint256 public immutable publicKeyY;
-    uint256 public votingStartTime;
-    uint256 public votingEndTime;
-    uint256 public registrationStartTime;
-    uint256 public registrationEndTime;
-
+    uint256 public immutable votingStartTime;
+    uint256 public immutable votingEndTime;
+    uint256 public immutable registrationStartTime;
+    uint256 public immutable registrationEndTime;
+    uint256 public immutable candidatesCount;
     address public tallyVerifier; // address allowed to publish final tally
     address public electionAuthority; // later:multisig / safe address controlling admin operations
 
     // Semaphore integration
-    address public semaphore; // Semaphore core contract
-    uint256 public semaphoreGroupId; // Group used for this election
+    address public immutable semaphore; // Semaphore core contract
+    uint256 public immutable semaphoreGroupId; // Group used for this election
 
     bool public closed;
 
@@ -49,7 +49,7 @@ contract Election is ReentrancyGuard {
     bytes32 public tallyProofHash; // sha256 digest of tally proof bundle
     uint256 public finalTallyPublished; // timestamp
 
-    // Modifiers
+
     modifier onlyAuthority() {
         _onlyAuthority();
         _;
@@ -83,6 +83,7 @@ contract Election is ReentrancyGuard {
         uint256 _registrationEndTime,
         uint256 _startTime,
         uint256 _endTime,
+        uint256 _candidatesCount,
         address _tallyVerifier,
         address _electionAuthority,
         address _semaphore,
@@ -100,7 +101,8 @@ contract Election is ReentrancyGuard {
         require(_tallyVerifier != address(0), "Election: zero tallyVerifier");
         require(_electionAuthority != address(0), "Election: zero authority");
         require(_semaphore != address(0), "Election: zero semaphore");
-
+        require(_candidatesCount > 1, "Election: must have at least 2 candidates");
+        candidatesCount = _candidatesCount;
         electionId = _electionId;
         metadataHash = _metadataHash;
         publicKeyX = _pkx;
@@ -116,8 +118,6 @@ contract Election is ReentrancyGuard {
         semaphore = _semaphore;
         semaphoreGroupId = _semaphoreGroupId;
 
-        closed = false;
-        finalTallyPublished = 0;
     }
 
     /**
@@ -130,21 +130,22 @@ contract Election is ReentrancyGuard {
      *        - points[8] = Groth16 proof points.
      */
     function submitVote(
-        uint256 c1x,
-        uint256 c1y,
-        uint256 c2x,
-        uint256 c2y,
+        uint256[] calldata c1x,
+        uint256[] calldata c1y,
+        uint256[] calldata c2x,
+        uint256[] calldata c2y,
         ISemaphore.SemaphoreProof calldata semaProof
     ) external nonReentrant {
         require(block.timestamp >= votingStartTime, "Election: not started");
         require(block.timestamp <= votingEndTime, "Election: finished");
         require(!closed, "Election: closed");
-
+        require(c1x.length == candidatesCount && c1y.length == candidatesCount && c2x.length == candidatesCount && c2y.length == candidatesCount
+        , "Election: wrong cyphertext count");
         bytes32 rawHash = keccak256(abi.encode(electionId, c1x, c1y, c2x, c2y));
         uint256 expectedMessage = uint256(rawHash) >> 8; // truncate to 248 bits, because Semaphore use 248-bit field
 
         require(
-            semaProof.message == uint256(expectedMessage),
+            semaProof.message == expectedMessage,
             "Election: bad message"
         );
         require(semaProof.scope == electionId, "Election: bad scope");
@@ -162,7 +163,7 @@ contract Election is ReentrancyGuard {
             "Election: not in registration period"
         );
         ISemaphore(semaphore).addMember(semaphoreGroupId, identityCommitment);
-        emit VoterRegistered(identityCommitment, electionAuthority);
+        emit VoterRegistered(identityCommitment, msg.sender);
     }
 
     function closeElection() external onlyAuthority {
@@ -189,11 +190,12 @@ contract Election is ReentrancyGuard {
         string calldata proofCid,
         bytes32 _tallyProofHash
     ) external onlyTallyVerifier {
-        require(finalTallyPublished != 0, "Election: tally already published");
+        require(finalTallyPublished == 0, "Election: tally already published");
         require(
             closed || block.timestamp > votingEndTime,
             "Election: cannot publish tally before close"
         );
+        require(tallies.length == candidatesCount, "Election: wrong tally length");
         if (!closed) {
             closed = true;
             emit ElectionClosed(electionId, block.timestamp);
