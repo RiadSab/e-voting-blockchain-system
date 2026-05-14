@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {ISemaphore} from "@semaphore/contracts/interfaces/ISemaphore.sol";
+import {ISemaphore} from "../lib/semaphore/packages/contracts/contracts/interfaces/ISemaphore.sol";
 import {Election} from "./Election.sol";
 
 contract ElectionFactory {
