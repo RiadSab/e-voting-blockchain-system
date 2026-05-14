@@ -41,7 +41,7 @@ contract ElectionFactory {
     constructor(
         address _electoralAuthority,
         address _semaphore
-    )  {
+    ){
         electoralAuthority = _electoralAuthority;
         semaphore = _semaphore;
         electionCount = 1;

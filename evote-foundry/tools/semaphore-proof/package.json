@@ -1,0 +1,11 @@
+{
+  "name": "semaphore-proof-tools",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@semaphore-protocol/group": "4.14.0",
+    "@semaphore-protocol/identity": "4.14.0",
+    "@semaphore-protocol/proof": "4.14.0",
+    "ethers": "6.13.4"
+  }
+}

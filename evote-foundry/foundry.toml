@@ -12,6 +12,7 @@ optimizer_runs = 200
 # Needed for deployment scripts that merge into deployments/deployments.json.
 fs_permissions = [
 	{ access = "read-write", path = "./deployments" },
+	{ access = "read", path = "./test/fixtures" },
 	# kept for existing ZK tooling that writes files under the repo
 	{ access = "write", path = "./" }
 ]

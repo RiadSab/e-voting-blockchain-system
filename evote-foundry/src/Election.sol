@@ -112,9 +112,8 @@ contract Election is ReentrancyGuard {
         tallyVerifier = _tallyVerifier;
         electionAuthority = _electionAuthority;
 
-        semaphoreGroupId = ISemaphore(semaphore).createGroup(address(this));
-        // Semaphore config
         semaphore = _semaphore;
+        semaphoreGroupId = ISemaphore(semaphore).createGroup(address(this));
 
     }
 
