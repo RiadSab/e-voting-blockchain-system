@@ -8,6 +8,30 @@ via_ir = true
 optimizer = true
 optimizer_runs = 200
 
+remappings = [
+	"@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+	"@semaphore/contracts/=lib/semaphore/packages/contracts/contracts/",
+	"@zk-kit/lean-imt.sol=lib/semaphore/node_modules/@zk-kit/lean-imt.sol",
+	"@zk-kit=lib/semaphore/node_modules/@zk-kit"
+]
+
+[profile.deploy]
+solc_version = "0.8.28"
+via_ir = true
+optimizer = true
+optimizer_runs = 200
+
+remappings = [
+	"@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+	"@semaphore/contracts/=lib/semaphore/packages/contracts/contracts/",
+	"@zk-kit/lean-imt.sol=lib/semaphore/node_modules/@zk-kit/lean-imt.sol",
+	"@zk-kit=lib/semaphore/node_modules/@zk-kit"
+]
+
+libraries = [
+	"lib/semaphore/node_modules/poseidon-solidity/PoseidonT3.sol:PoseidonT3:0xB43122Ecb241DD50062641f089876679fd06599a"
+]
+
 # File system permissions for scripts/tests that read/write local files.
 # Needed for deployment scripts that merge into deployments/deployments.json.
 fs_permissions = [
@@ -18,11 +42,4 @@ fs_permissions = [
 ]
 
 # Remappings
-remappings = [
-	"@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
-	"@semaphore/contracts/=lib/semaphore/packages/contracts/contracts/",
-	"@zk-kit/lean-imt.sol=lib/semaphore/node_modules/@zk-kit/lean-imt.sol",
-	"@zk-kit=lib/semaphore/node_modules/@zk-kit"
-]
-
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
