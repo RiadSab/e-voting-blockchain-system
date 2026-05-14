@@ -20,23 +20,23 @@ contract DeploySemaphore is Script {
 		SemaphoreVerifier semaVerifier = new SemaphoreVerifier();
 		Semaphore semaphore = new Semaphore(ISemaphoreVerifier(address(semaVerifier)));
 
-		address admin = tx.origin;
-		// Start group ids from 1 for this project: create and ignore group 0, then use group 1.
-		semaphore.createGroup(admin);
-		uint256 groupId = semaphore.createGroup(admin);
-
-		// Do NOT add dummy members here. Identity commitments must be valid SNARK field elements;
-		// the backend will add real members later.
-		uint256 merkleRoot = semaphore.getMerkleTreeRoot(groupId);
-
 		console.log("Semaphore:", address(semaphore));
-		console.log("GroupId:", groupId);
-		console.log("MerkleRoot:", merkleRoot);
 
 		string memory existing = _readExistingDeployments();
-		address existingFactory = _readAddress(existing, ".factory");
-		address existingTallyVerifier = _readAddress(existing, ".tallyVerifier");
-		string memory existingNetwork = _readString(existing, ".network");
+		string memory chainKey = _chainKey();
+		string memory prefix = string.concat(chainKey, ".");
+		address existingFactory = _readAddress(
+			existing,
+			string.concat(prefix, "factory")
+		);
+		address existingTallyVerifier = _readAddress(
+			existing,
+			string.concat(prefix, "tallyVerifier")
+		);
+		string memory existingNetwork = _readString(
+			existing,
+			string.concat(prefix, "network")
+		);
 
 		string memory obj = "deployments";
 		// Preserve previously-deployed contracts (if present)
@@ -48,11 +48,16 @@ contract DeploySemaphore is Script {
 		}
 
 		vm.serializeAddress(obj, "semaphore", address(semaphore));
-		vm.serializeUint(obj, "semaphoreGroupId", groupId);
-		vm.serializeUint(obj, "semaphoreMerkleRoot", merkleRoot);
 		vm.serializeString(obj, "chainId", toString(block.chainid));
-		string memory json = vm.serializeString(obj, "network", bytes(existingNetwork).length == 0 ? "anvil-hardhat" : existingNetwork);
-		vm.writeJson(json, DEPLOYMENTS_PATH);
+		string memory json = vm.serializeString(
+			obj,
+			"network",
+			bytes(existingNetwork).length == 0
+				? _networkNameForChainId(block.chainid)
+				: existingNetwork
+		);
+		_ensureDeploymentsFile();
+		vm.writeJson(json, DEPLOYMENTS_PATH, chainKey);
 
 		vm.stopBroadcast();
 	}
@@ -91,11 +96,35 @@ contract DeploySemaphore is Script {
 		if (bytes(json).length == 0) return "";
 		return json.readStringOr(key, "");
 	}
+
+	function _chainKey() internal view returns (string memory) {
+		return string.concat(".", toString(block.chainid));
+	}
+
+	function _networkNameForChainId(uint256 chainId) internal pure returns (string memory) {
+		if (chainId == 1) return "mainnet";
+		if (chainId == 5) return "goerli";
+		if (chainId == 11155111) return "sepolia";
+		if (chainId == 17000) return "holesky";
+		if (chainId == 31337) return "anvil";
+		if (chainId == 10) return "optimism";
+		if (chainId == 11155420) return "optimism-sepolia";
+		if (chainId == 42161) return "arbitrum";
+		if (chainId == 421614) return "arbitrum-sepolia";
+		if (chainId == 8453) return "base";
+		if (chainId == 84532) return "base-sepolia";
+		if (chainId == 137) return "polygon";
+		if (chainId == 80002) return "polygon-amoy";
+		if (chainId == 56) return "bsc";
+		if (chainId == 97) return "bsc-testnet";
+		if (chainId == 43114) return "avalanche";
+		if (chainId == 43113) return "avalanche-fuji";
+		return string.concat("chain-", toString(chainId));
+	}
+
+	function _ensureDeploymentsFile() internal {
+		if (!vm.exists(DEPLOYMENTS_PATH)) {
+			vm.writeJson("{}", DEPLOYMENTS_PATH);
+		}
+	}
 }
-
-
-// contract DeploySemaphore is Script {
-// 	function run() external pure {
-// 		// disabled
-// 	}
-// }
