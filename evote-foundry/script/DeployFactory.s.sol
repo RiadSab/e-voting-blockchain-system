@@ -16,43 +16,66 @@ contract DeployFactory is Script {
         vm.startBroadcast();
 
         string memory existing = _readExistingDeployments();
+        string memory chainKey = _chainKey();
+        string memory prefix = string.concat(chainKey, ".");
 
         // Preserve previously-deployed contracts (if present)
-        address existingSemaphore = _readAddress(existing, ".semaphore");
-        uint256 existingSemaphoreGroupId = _readUint(existing, ".semaphoreGroupId");
-        uint256 existingSemaphoreMerkleRoot = _readUint(existing, ".semaphoreMerkleRoot");
-        address existingTallyVerifier = _readAddress(existing, ".tallyVerifier");
-        string memory existingNetwork = _readString(existing, ".network");
+        address existingSemaphore = _readAddress(
+            existing,
+            string.concat(prefix, "semaphore")
+        );
+        address existingTallyVerifier = _readAddress(
+            existing,
+            string.concat(prefix, "tallyVerifier")
+        );
+        string memory existingNetwork = _readString(
+            existing,
+            string.concat(prefix, "network")
+        );
 
         // Defaults: deployer is the authority. Optionally override with env vars.
         address authority = vm.envOr("ELECTORAL_AUTHORITY", tx.origin);
-        address defaultTallyVerifier = vm.envOr("DEFAULT_TALLY_VERIFIER", existingTallyVerifier);
+        address defaultTallyVerifier = vm.envOr(
+            "DEFAULT_TALLY_VERIFIER",
+            existingTallyVerifier
+        );
+        address semaphoreAddress = vm.envOr(
+            "SEMAPHORE_ADDRESS",
+            existingSemaphore
+        );
+        require(
+            semaphoreAddress != address(0),
+            "DeployFactory: semaphore address required"
+        );
 
-        ElectionFactory factory = new ElectionFactory(authority, defaultTallyVerifier);
+        ElectionFactory factory = new ElectionFactory(authority, semaphoreAddress);
 
         console.log("Factory:", address(factory));
         console.log("Electoral authority:", authority);
+        console.log("Semaphore:", semaphoreAddress);
         console.log("Default tally verifier:", defaultTallyVerifier);
 
         string memory obj = "deployments";
         vm.serializeAddress(obj, "factory", address(factory));
 
-        if (existingSemaphore != address(0)) {
-            vm.serializeAddress(obj, "semaphore", existingSemaphore);
-        }
-        if (existingSemaphoreGroupId != 0) {
-            vm.serializeUint(obj, "semaphoreGroupId", existingSemaphoreGroupId);
-        }
-        // Note: merkle root can be zero for empty group; preserve it anyway if present in file.
-        vm.serializeUint(obj, "semaphoreMerkleRoot", existingSemaphoreMerkleRoot);
+        vm.serializeAddress(obj, "semaphore", semaphoreAddress);
 
         if (existingTallyVerifier != address(0)) {
             vm.serializeAddress(obj, "tallyVerifier", existingTallyVerifier);
+        } else if (defaultTallyVerifier != address(0)) {
+            vm.serializeAddress(obj, "tallyVerifier", defaultTallyVerifier);
         }
 
         vm.serializeString(obj, "chainId", toString(block.chainid));
-        string memory json = vm.serializeString(obj, "network", bytes(existingNetwork).length == 0 ? "anvil-hardhat" : existingNetwork);
-        vm.writeJson(json, DEPLOYMENTS_PATH);
+        string memory json = vm.serializeString(
+            obj,
+            "network",
+            bytes(existingNetwork).length == 0
+                ? _networkNameForChainId(block.chainid)
+                : existingNetwork
+        );
+        _ensureDeploymentsFile();
+        vm.writeJson(json, DEPLOYMENTS_PATH, chainKey);
 
         vm.stopBroadcast();
     }
@@ -87,13 +110,39 @@ contract DeployFactory is Script {
         return json.readAddressOr(key, address(0));
     }
 
-    function _readUint(string memory json, string memory key) internal view returns (uint256) {
-        if (bytes(json).length == 0) return 0;
-        return json.readUintOr(key, 0);
-    }
-
     function _readString(string memory json, string memory key) internal view returns (string memory) {
         if (bytes(json).length == 0) return "";
         return json.readStringOr(key, "");
+    }
+
+    function _chainKey() internal view returns (string memory) {
+        return string.concat(".", toString(block.chainid));
+    }
+
+    function _networkNameForChainId(uint256 chainId) internal pure returns (string memory) {
+        if (chainId == 1) return "mainnet";
+        if (chainId == 5) return "goerli";
+        if (chainId == 11155111) return "sepolia";
+        if (chainId == 17000) return "holesky";
+        if (chainId == 31337) return "anvil";
+        if (chainId == 10) return "optimism";
+        if (chainId == 11155420) return "optimism-sepolia";
+        if (chainId == 42161) return "arbitrum";
+        if (chainId == 421614) return "arbitrum-sepolia";
+        if (chainId == 8453) return "base";
+        if (chainId == 84532) return "base-sepolia";
+        if (chainId == 137) return "polygon";
+        if (chainId == 80002) return "polygon-amoy";
+        if (chainId == 56) return "bsc";
+        if (chainId == 97) return "bsc-testnet";
+        if (chainId == 43114) return "avalanche";
+        if (chainId == 43113) return "avalanche-fuji";
+        return string.concat("chain-", toString(chainId));
+    }
+
+    function _ensureDeploymentsFile() internal {
+        if (!vm.exists(DEPLOYMENTS_PATH)) {
+            vm.writeJson("{}", DEPLOYMENTS_PATH);
+        }
     }
 }
