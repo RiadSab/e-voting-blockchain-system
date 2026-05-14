@@ -6,7 +6,7 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ISemaphore} from "@semaphore/contracts/interfaces/ISemaphore.sol";
 import {Election} from "./Election.sol";
 
-contract ElectionFactory is Ownable {
+contract ElectionFactory {
     using Address for address;
 
     event ElectionCreated(
@@ -41,13 +41,13 @@ contract ElectionFactory is Ownable {
     constructor(
         address _electoralAuthority,
         address _semaphore
-    ) Ownable(_electoralAuthority) {
+    )  {
         electoralAuthority = _electoralAuthority;
         semaphore = _semaphore;
         electionCount = 1;
     }
 
-    function setElectoralAuthority(address _authority) external onlyOwner {
+    function setElectoralAuthority(address _authority) external onlyAuthority {
         require(_authority != address(0), "Factory: authority zero address");
         electoralAuthority = _authority;
     }
@@ -72,7 +72,6 @@ contract ElectionFactory is Ownable {
         newElectionId = electionCount;
         electionCount += 1;
 
-        uint256 groupId = ISemaphore(semaphore).createGroup(address(this));
 
         Election e = new Election(
             newElectionId,
@@ -86,8 +85,7 @@ contract ElectionFactory is Ownable {
             candidatesCount,
             tallyVerifier,
             electionAuthority,
-            semaphore,
-            groupId
+            semaphore
         );
 
         elections[newElectionId] = address(e);

@@ -43,7 +43,6 @@ contract Election is ReentrancyGuard {
     address public immutable semaphore; // Semaphore core contract
     uint256 public immutable semaphoreGroupId; // Group used for this election
 
-    bool public closed;
 
     uint256[] public finalTally; // published results (per-candidate counts)
     bytes32 public tallyProofHash; // sha256 digest of tally proof bundle
@@ -86,8 +85,7 @@ contract Election is ReentrancyGuard {
         uint256 _candidatesCount,
         address _tallyVerifier,
         address _electionAuthority,
-        address _semaphore,
-        uint256 _semaphoreGroupId
+        address _semaphore
     ) {
         require(_startTime < _endTime, "Election: bad window");
         require(
@@ -114,9 +112,9 @@ contract Election is ReentrancyGuard {
         tallyVerifier = _tallyVerifier;
         electionAuthority = _electionAuthority;
 
+        semaphoreGroupId = ISemaphore(semaphore).createGroup(address(this));
         // Semaphore config
         semaphore = _semaphore;
-        semaphoreGroupId = _semaphoreGroupId;
 
     }
 
@@ -135,10 +133,9 @@ contract Election is ReentrancyGuard {
         uint256[] calldata c2x,
         uint256[] calldata c2y,
         ISemaphore.SemaphoreProof calldata semaProof
-    ) external nonReentrant {
+    ) external nonReentrant onlyAuthority {
         require(block.timestamp >= votingStartTime, "Election: not started");
         require(block.timestamp <= votingEndTime, "Election: finished");
-        require(!closed, "Election: closed");
         require(c1x.length == candidatesCount && c1y.length == candidatesCount && c2x.length == candidatesCount && c2y.length == candidatesCount
         , "Election: wrong cyphertext count");
         bytes32 rawHash = keccak256(abi.encode(electionId, c1x, c1y, c2x, c2y));
@@ -166,18 +163,9 @@ contract Election is ReentrancyGuard {
         emit VoterRegistered(identityCommitment, msg.sender);
     }
 
-    function closeElection() external onlyAuthority {
-        require(!closed, "Election: already closed");
-        closed = true;
-        emit ElectionClosed(electionId, block.timestamp);
-    }
 
     // emitting tallyVerifier address change to protect against authority silence modifications
     function setTallyVerifier(address _tallyVerifier) external onlyAuthority {
-        require(
-            !closed,
-            "Election: cannot change verifier in a closed election"
-        );
         require(_tallyVerifier != address(0), "Election: zero address");
         emit TallyVerifierUpdated(tallyVerifier, _tallyVerifier);
         tallyVerifier = _tallyVerifier;
@@ -192,14 +180,10 @@ contract Election is ReentrancyGuard {
     ) external onlyTallyVerifier {
         require(finalTallyPublished == 0, "Election: tally already published");
         require(
-            closed || block.timestamp > votingEndTime,
+            block.timestamp > votingEndTime,
             "Election: cannot publish tally before close"
         );
         require(tallies.length == candidatesCount, "Election: wrong tally length");
-        if (!closed) {
-            closed = true;
-            emit ElectionClosed(electionId, block.timestamp);
-        }
         // store final tallies
         finalTally = tallies;
 
