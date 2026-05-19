@@ -1,4 +1,22 @@
 services:
+  ipfs-node:
+    image: ipfs/kubo
+    container_name: ipfs-node
+    restart: unless-stopped
+    environment:
+       IPFS_PROFILE: server
+    volumes:
+      - ${IPFS_STAGING}:/export
+      - ipfs_data:/data/ipfs
+    ports:
+      - "4001:4001"
+      - "4001:4001/udp"
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:5001:5001"
+    networks:
+      - evote-net
+
+
   app-db:
     image: postgres:16
     container_name: evote-app-db
@@ -85,7 +103,8 @@ services:
 
 volumes:
   app_db_data:
-  keycloak_db_data: 
+  keycloak_db_data:
+  ipfs_data:
 
 networks:
   evote-net:
