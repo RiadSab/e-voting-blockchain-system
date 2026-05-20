@@ -17,3 +17,9 @@ evote-contract/deployment-info.json
 # IDE settings
 .idea/
 .vscode/
+
+WORKFLOW.md
+tx-service/vault/token.env
+tx-service/vault/secrets/
+tx-service/vault/role-id
+tx-service/vault/secret-id
