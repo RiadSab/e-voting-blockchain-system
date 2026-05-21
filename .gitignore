@@ -25,3 +25,8 @@ tx-service/vault/role-id
 tx-service/vault/secret-id
 tx-service/vault/secrets/tx-service.env
 *.env
+
+
+/external/
+external/
+/external
