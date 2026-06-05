@@ -2,6 +2,7 @@ use ark_bn254::{Fr, G1Projective as G};
 use ark_ec::{Group, CurveGroup};
 use ark_ff::{PrimeField, UniformRand, BigInteger};
 use sha3::{Digest, Keccak256};
+pub mod chaum_pedersen;
 
 #[derive(Clone)]
 pub struct SchnorrProof {
