@@ -1,9 +1,10 @@
 use ark_bn254::{Fr, G1Projective as G};
-use ark_ec::{Group, CurveGroup};
-use ark_ff::{PrimeField, UniformRand, BigInteger};
+use ark_ec::{CurveGroup, Group};
+use ark_ff::{BigInteger, PrimeField, UniformRand};
 use sha3::{Digest, Keccak256};
 pub mod chaum_pedersen;
-
+pub mod elgamal;
+pub mod ballot;
 #[derive(Clone)]
 pub struct SchnorrProof {
     pub t: G,
@@ -20,7 +21,7 @@ pub fn prove(alpha: &Fr, g: &G, u: &G) -> SchnorrProof {
 }
 
 pub fn verify(g: &G, u: &G, proof: &SchnorrProof) -> bool {
- let c = challenge(g, u, &proof.t);
+    let c = challenge(g, u, &proof.t);
     *g * proof.z == proof.t + *u * c
 }
 
@@ -41,8 +42,8 @@ fn challenge(g: &G, u: &G, t: &G) -> Fr {
     h.update(point_to_bytes(g));
     h.update(point_to_bytes(u));
     h.update(point_to_bytes(t));
-    let digest = h.finalize();                 // 32 bytes
-    Fr::from_be_bytes_mod_order(&digest)        // mod scalar order, same as Solidity's % r
+    let digest = h.finalize(); // 32 bytes
+    Fr::from_be_bytes_mod_order(&digest) // mod scalar order, same as Solidity's % r
 }
 
 #[cfg(test)]
@@ -62,7 +63,7 @@ mod tests {
     fn fake_proof_fails() {
         let g = G::generator();
         let u = g * Fr::from(7u64);
-        let proof = prove(&Fr::from(8u64), &g, &u);  // wrong secret
+        let proof = prove(&Fr::from(8u64), &g, &u); // wrong secret
         assert!(!verify(&g, &u, &proof));
     }
 
@@ -86,5 +87,30 @@ mod tests {
         println!("t.y = {}", ta.y);
         println!("z   = {}", proof.z);
         println!("c   = {}", challenge(&g, &u, &proof.t));
+    }
+
+    #[test]
+    fn simulated_proof_verifies_without_secret() {
+        use ark_bn254::{Fr, G1Projective as G};
+        use ark_ec::Group;
+        use ark_ff::UniformRand;
+
+        let mut rng = ark_std::rand::thread_rng();
+
+        let g = G::generator();
+        let u = g * Fr::from(7u64); // public key. secret is 7 — but we NEVER use it below.
+
+        // The simulation: pick c and z FIRST (arbitrary), then back-solve t.
+        let c = Fr::from(4u64);
+        let z = Fr::from(9u64);
+        let t = g * z - u * c; // t = g*z - u*c  <-- the trick
+
+        // Verifier's check, exactly as in a real proof:
+        let lhs = g * z;
+        let rhs = t + u * c;
+        assert_eq!(lhs, rhs); // verifies, though no secret was used
+
+        // sanity: prove we really didn't need the secret — c,z were free choices
+        let _ = &mut rng; // (rng unused; chosen values are fixed on purpose)
     }
 }
