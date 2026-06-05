@@ -30,3 +30,7 @@ tx-service/vault/secrets/tx-service.env
 /external/
 external/
 /external
+
+/target
+
+STATE.md
